@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Simple Page</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>Welcome to team dark horse's UI</h1>
+  </header>
+
+  <main>
+    <p id="greeting">This is a minimal HTML example.</p>
+    <button id="btn">Click me</button>
+  </main>
+
+  <footer>
+    <small>Made for demonstration</small>
+  </footer>
+
+  <script>
+    document.getElementById('btn').addEventListener('click', () => {
+      const p = document.getElementById('greeting');
+      p.textContent = 'You clicked the button — nice!';
+    });
+  </script>
+</body>
+</html>
