@@ -1,30 +1,78 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Simple Page</title>
-  <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RaceAnalytics Pro — Hong Kong Horse Racing Dashboard</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 <body>
-  <header>
-    <h1>Welcome to team dark horse's UI</h1>
-  </header>
+  <!-- Top Navigation -->
+  <nav class="top-nav">
+    <div class="nav-brand">
+      <svg class="brand-icon" viewBox="0 0 24 24" width="28" height="28">
+        <path fill="#58a6ff" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+      </svg>
+      <span class="brand-name">RaceAnalytics Pro</span>
+    </div>
+    <div class="nav-tabs">
+      <a class="nav-tab active" href="#">Dashboard</a>
+      <a class="nav-tab" href="#">Race Analysis</a>
+      <a class="nav-tab" href="#">Horse Database</a>
+      <a class="nav-tab" href="#">Jockey Profiles</a>
+      <a class="nav-tab" href="#">Genetics &amp; Breeding</a>
+      <a class="nav-tab" href="#">Gear Insights</a>
+    </div>
+    <div class="nav-right">
+      <div class="search-box">
+        <svg viewBox="0 0 16 16" width="14" height="14"><path fill="#8b949e" d="M11.5 7a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0zm-.82 4.74a6 6 0 1 1 1.06-1.06l3.04 3.04a.75.75 0 1 1-1.06 1.06l-3.04-3.04z"/></svg>
+        <input type="text" placeholder="Search..." id="global-search">
+      </div>
+    </div>
+  </nav>
 
-  <main>
-    <p id="greeting">This is a minimal HTML example.</p>
-    <button id="btn">Click me</button>
+  <!-- Main Dashboard Grid -->
+  <main class="dashboard">
+    <!-- LEFT PANEL -->
+    <aside class="left-panel">
+      <div class="panel-card" id="sidebar-selector"></div>
+      <div class="panel-card" id="speed-analytics"></div>
+      <div class="panel-card" id="performance-grid"></div>
+    </aside>
+
+    <!-- CENTER PANEL -->
+    <section class="center-panel">
+      <div class="panel-card" id="race-replay"></div>
+      <div class="center-bottom-grid">
+        <div class="panel-card" id="synergy-matrix"></div>
+        <div class="panel-card" id="gear-impact"></div>
+      </div>
+    </section>
+
+    <!-- RIGHT PANEL -->
+    <aside class="right-panel">
+      <div class="panel-card" id="breeding-tree"></div>
+      <div class="panel-card" id="trending-trends"></div>
+    </aside>
   </main>
 
-  <footer>
-    <small>Made for demonstration</small>
+  <!-- Footer -->
+  <footer class="app-footer">
+    <span>Data source: HKJC. HorsBooks. Info. Roskbooks, Ankane TDn. Tsns look.it.io.</span>
+    <span>Terms | Help</span>
   </footer>
 
-  <script>
-    document.getElementById('btn').addEventListener('click', () => {
-      const p = document.getElementById('greeting');
-      p.textContent = 'You clicked the button — nice!';
-    });
-  </script>
+  <!-- Scripts (order matters: state -> data -> components -> app) -->
+  <script src="js/GlobalState.js"></script>
+  <script src="js/DataLoader.js"></script>
+  <script src="js/SidebarSelector.js"></script>
+  <script src="js/PerformanceGrid.js"></script>
+  <script src="js/RaceReplay.js"></script>
+  <script src="js/SpeedAnalytics.js"></script>
+  <script src="js/BreedingTree.js"></script>
+  <script src="js/SynergyMatrix.js"></script>
+  <script src="js/GearImpactAnalyzer.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>
