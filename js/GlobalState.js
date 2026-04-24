@@ -61,8 +61,8 @@ window.DarkHorse.GlobalState = (function () {
 
   function getRaceData(date, raceIndex) {
     const d = date || (_state.activeRace && _state.activeRace.Date);
-    const r = raceIndex || (_state.activeRace && _state.activeRace.RaceIndex);
-    return _state.allData.filter(row => row.Date === d && row.RaceIndex === r);
+    const r = raceIndex != null ? raceIndex : (_state.activeRace && _state.activeRace.RaceIndex);
+    return _state.allData.filter(row => row.Date === d && +row.RaceIndex === +r);
   }
 
   function getUniqueHorses() {

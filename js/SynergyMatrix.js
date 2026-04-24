@@ -55,7 +55,7 @@ window.DarkHorse.SynergyMatrix = (function () {
     });
     selectors.append('span').style('color', 'var(--text-secondary)').style('margin', '0 4px').text('&');
     selectors.append('span').style('font-weight', '600').text(latest.Name);
-    selectors.append('button').text('Select').on('click', () => _renderCombo(records));
+    jSel.on('change', () => _renderCombo(records));
 
     _renderCombo(records);
   }
@@ -63,6 +63,8 @@ window.DarkHorse.SynergyMatrix = (function () {
   function _renderCombo(records) {
     const content = container.select('#synergy-content');
     content.html('');
+
+    const Tips = window.DarkHorse.Tooltips;
 
     const selJockey = container.select('#synergy-jockey-select').node();
     const jockey = selJockey ? selJockey.value : records[records.length - 1].Jockey;
@@ -82,16 +84,17 @@ window.DarkHorse.SynergyMatrix = (function () {
     const avgLBW = total ? d3.mean(comboRecords, r => r.LBW) : 0;
 
     [
-      { val: total, lbl: 'Common Races' },
-      { val: total > 0 ? (wins / total * 100).toFixed(0) + '%' : '0%', lbl: 'Win%' },
-      { val: total > 0 ? (places / total * 100).toFixed(0) + '%' : '0%', lbl: 'Place%' },
-      { val: avgPos.toFixed(1), lbl: 'Avg Position' },
-      { val: avgLBW.toFixed(1) + 'L', lbl: 'Avg LBW' },
-      { val: total > 0 ? d3.mean(comboRecords, r => r.FSpeed).toFixed(2) : '--', lbl: 'Avg FSpeed' },
+      { val: total,                                                               lbl: 'Common Races', tipKey: 'Common Races'  },
+      { val: total > 0 ? (wins / total * 100).toFixed(0) + '%' : '0%',           lbl: 'Win%',         tipKey: 'Win%'         },
+      { val: total > 0 ? (places / total * 100).toFixed(0) + '%' : '0%',         lbl: 'Place%',       tipKey: 'Place%'       },
+      { val: avgPos.toFixed(1),                                                   lbl: 'Avg Position', tipKey: 'Avg Position' },
+      { val: avgLBW.toFixed(1) + 'L',                                             lbl: 'Avg LBW',      tipKey: 'Avg LBW'     },
+      { val: total > 0 ? d3.mean(comboRecords, r => r.FSpeed).toFixed(2) : '--', lbl: 'Avg FSpeed',   tipKey: 'Avg FSpeed'  },
     ].forEach(s => {
       const box = stats.append('div').attr('class', 'synergy-stat');
       box.append('div').attr('class', 'val').text(s.val);
-      box.append('div').attr('class', 'lbl').text(s.lbl);
+      const lbl = box.append('div').attr('class', 'lbl').text(s.lbl);
+      if (Tips && s.tipKey) Tips.attach(lbl.node(), s.tipKey);
     });
 
     // Trainer Performance Table
@@ -114,8 +117,14 @@ window.DarkHorse.SynergyMatrix = (function () {
 
     const table = content.append('table').attr('class', 'synergy-table');
     const thead = table.append('thead').append('tr');
-    ['Trainer', 'Win %', 'Wo.', 'Avg.P.'].forEach(h => {
-      thead.append('th').text(h);
+    [
+      { label: 'Trainer', tipKey: null       },
+      { label: 'Win %',   tipKey: 'Win %'    },
+      { label: 'Wo.',     tipKey: 'Wo.'      },
+      { label: 'Avg.P.',  tipKey: 'Avg.P.'   },
+    ].forEach(col => {
+      const th = thead.append('th').text(col.label);
+      if (Tips && col.tipKey) Tips.attach(th.node(), col.tipKey);
     });
 
     const tbody = table.append('tbody');

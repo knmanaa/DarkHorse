@@ -56,25 +56,28 @@ window.DarkHorse.GearImpactAnalyzer = (function () {
       return;
     }
 
-    // Group races by gear configuration
-    const gearGroups = d3.group(records, d => d.Gear);
-    const noGearKey = '--';
+    // Normalize each record's gear into a canonical sorted full-name key
+    // so "B TT" and "TT B" (or other ordering variants) collapse into one group.
+    const normalizeGear = (rawGear) => {
+      if (!rawGear || rawGear === '--') return 'NO GEAR';
+      const parts = Loader().parseGearString(rawGear);
+      if (!parts.length) return 'NO GEAR';
+      return parts.map(g => Loader().getGearFullName(g)).sort().join(' + ');
+    };
+
+    const gearGroups = d3.group(records, d => normalizeGear(d.Gear));
+    const noGearKey = 'NO GEAR';
     const baselineFSpeed = gearGroups.has(noGearKey)
       ? d3.mean(gearGroups.get(noGearKey), d => d.FSpeed)
       : d3.mean(records, d => d.FSpeed);
 
     // Compute impact for each gear config
     const impacts = [];
-    gearGroups.forEach((recs, gear) => {
+    gearGroups.forEach((recs, gearName) => {
       const avgFSpeed = d3.mean(recs, d => d.FSpeed);
       const delta = avgFSpeed - baselineFSpeed;
-      const gearParts = Loader().parseGearString(gear);
-      const gearName = gearParts.length > 0
-        ? gearParts.map(g => Loader().getGearFullName(g)).join(' + ')
-        : (gear === noGearKey ? 'NO GEAR' : gear);
 
       impacts.push({
-        gear,
         gearName,
         count: recs.length,
         avgFSpeed,
@@ -87,41 +90,60 @@ window.DarkHorse.GearImpactAnalyzer = (function () {
 
     body.html('');
 
-    // Table header
+    const Tips = window.DarkHorse.Tooltips;
+
+    // Column definitions: key, label, tipKey
+    const COLS = [
+      { label: 'Gear',       tipKey: 'Gear'      },
+      { label: 'Races',      tipKey: 'Races'     },
+      { label: 'Avg FSpeed', tipKey: 'Avg FSpeed'},
+      { label: 'Win %',      tipKey: 'Win %'     },
+      { label: 'Δ FSpeed',   tipKey: 'Δ FSpeed'  },
+    ];
+
     const tableDiv = body.append('div').style('padding', '4px');
     const table = tableDiv.append('table').attr('class', 'synergy-table');
     const thead = table.append('thead').append('tr');
-    ['Gear', 'Impact', 'Avg. FSpeed'].forEach(h => thead.append('th').text(h));
+    COLS.forEach(col => {
+      const th = thead.append('th').text(col.label);
+      if (Tips) Tips.attach(th.node(), col.tipKey);
+    });
 
     const tbody = table.append('tbody');
-    const maxAbsDelta = d3.max(impacts, d => Math.abs(d.delta)) || 1;
 
     impacts.forEach(imp => {
-      const tr = tbody.append('tr')
-        .on('mouseenter', (event) => {
-          tooltip.style('display', null)
-            .html(`<div class="tt-title">${imp.gearName}</div>
-                   <div class="tt-row"><span class="tt-label">Races:</span><span>${imp.count}</span></div>
-                   <div class="tt-row"><span class="tt-label">Avg FSpeed:</span><span>${imp.avgFSpeed.toFixed(2)}s</span></div>
-                   <div class="tt-row"><span class="tt-label">Win%:</span><span>${imp.winPct.toFixed(0)}%</span></div>
-                   <div class="tt-row"><span class="tt-label">Δ FSpeed:</span><span>${imp.delta > 0 ? '+' : ''}${imp.delta.toFixed(2)}s</span></div>`)
-            .style('left', (event.pageX + 10) + 'px').style('top', (event.pageY - 20) + 'px');
-        })
-        .on('mouseleave', () => tooltip.style('display', 'none'));
+      const tr = tbody.append('tr');
 
-      tr.append('td').text(imp.gearName);
+      // Gear name (truncated with title for long combos)
+      tr.append('td')
+        .attr('title', imp.gearName)
+        .style('max-width', '120px')
+        .style('white-space', 'nowrap')
+        .style('overflow', 'hidden')
+        .style('text-overflow', 'ellipsis')
+        .text(imp.gearName);
 
-      // Impact bar
-      const barTd = tr.append('td').style('width', '140px');
-      const barWrap = barTd.append('div').attr('class', 'gear-bar-track');
-      const pctWidth = Math.abs(imp.delta) / maxAbsDelta * 100;
-      const isPositive = imp.delta <= 0; // lower FSpeed = faster = positive impact
-      barWrap.append('div')
-        .attr('class', `gear-bar-fill ${isPositive ? 'positive' : 'negative'}`)
-        .style('width', Math.max(pctWidth, 8) + '%')
-        .text((isPositive ? '↓' : '↑') + Math.abs(imp.delta).toFixed(2));
+      // Races
+      tr.append('td').text(imp.count);
 
-      tr.append('td').attr('class', 'gear-avg-fspeed').text(imp.avgFSpeed.toFixed(2) + 's');
+      // Avg FSpeed
+      tr.append('td').text(imp.avgFSpeed.toFixed(2) + 's');
+
+      // Win %
+      tr.append('td').text(imp.winPct.toFixed(1) + '%');
+
+      // Δ FSpeed — green if negative (faster), red if positive (slower)
+      const faster = imp.delta < 0;
+      const neutral = Math.abs(imp.delta) < 0.001;
+      const deltaColor = neutral
+        ? 'var(--text-secondary)'
+        : faster ? 'var(--accent-green)' : 'var(--accent-red)';
+      tr.append('td')
+        .style('font-weight', '600')
+        .style('font-family', 'var(--font-mono)')
+        .style('color', deltaColor)
+        .text(neutral ? '—'
+          : (faster ? '▼ ' : '▲ ') + Math.abs(imp.delta).toFixed(2) + 's');
     });
   }
 

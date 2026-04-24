@@ -21,34 +21,11 @@ window.DarkHorse.RaceReplay = (function () {
   function _render() {
     container.html('');
 
-    // Header with tabs
+    // Header — just a title, no inner sub-tabs
     const header = container.append('div').attr('class', 'panel-header');
-    header.append('span').text('Interactive Race Replay (Data View)');
-    const tabs = header.append('div').attr('class', 'replay-tabs');
-    ['Interactive', 'Analysis', 'Detailed'].forEach((t, i) => {
-      tabs.append('span')
-        .attr('class', `replay-tab${i === 0 ? ' active' : ''}`)
-        .text(t);
-    });
+    header.append('span').text('Interactive Race Replay');
 
-    // Race title
-    container.append('div').attr('class', 'replay-title').attr('id', 'replay-race-title')
-      .text('Select a race from the Performance Grid');
-
-    // SVG
-    svg = container.append('div').attr('class', 'panel-body').style('padding', '0')
-      .append('svg')
-      .attr('class', 'replay-svg')
-      .attr('viewBox', `0 0 ${W} ${H}`)
-      .attr('preserveAspectRatio', 'xMidYMid meet');
-
-    _drawEmptyTrack();
-
-    // Race conditions
-    container.append('div').attr('class', 'race-conditions').attr('id', 'replay-conditions')
-      .html(_condHtml('--', '--', '--', '--'));
-
-    // Scrubber controls
+    // Scrubber controls — placed immediately below title so they're always visible
     const scrubber = container.append('div').attr('class', 'replay-scrubber');
 
     // Play/pause button
@@ -75,6 +52,23 @@ window.DarkHorse.RaceReplay = (function () {
     // Time display
     scrubber.append('span').attr('class', 'scrub-time').attr('id', 'scrub-time-display').text('0:00');
 
+    // Race title
+    container.append('div').attr('class', 'replay-title').attr('id', 'replay-race-title')
+      .text('Select a race from the Performance Grid');
+
+    // SVG
+    svg = container.append('div').attr('class', 'panel-body').style('padding', '0')
+      .append('svg')
+      .attr('class', 'replay-svg')
+      .attr('viewBox', `0 0 ${W} ${H}`)
+      .attr('preserveAspectRatio', 'xMidYMid meet');
+
+    _drawEmptyTrack();
+
+    // Race conditions
+    container.append('div').attr('class', 'race-conditions').attr('id', 'replay-conditions')
+      .html(_condHtml('--', '--', '--', '--'));
+
     // Tooltip
     tooltip = d3.select('body').selectAll('.d3-tooltip.replay-tt').data([0])
       .join('div').attr('class', 'd3-tooltip replay-tt').style('display', 'none');
@@ -91,8 +85,8 @@ window.DarkHorse.RaceReplay = (function () {
   function _buildTrackPath(dist) {
     // Create an oval track proportional to the real HK tracks
     const cx = W / 2, cy = H / 2 - 10;
-    const rx = W / 2 - MARGIN.left - 40;
-    const ry = H / 2 - MARGIN.top - 30;
+    const rx = W / 2 - MARGIN.left - 70;
+    const ry = H / 2 - MARGIN.top - 55;
     // Build path points for the oval (clockwise, starting from finish line on the right)
     const pts = [];
     const N = 200;
@@ -115,8 +109,8 @@ window.DarkHorse.RaceReplay = (function () {
 
     // Inner and outer rails
     const cx = W / 2, cy = H / 2 - 10;
-    const rx = W / 2 - MARGIN.left - 40;
-    const ry = H / 2 - MARGIN.top - 30;
+    const rx = W / 2 - MARGIN.left - 70;
+    const ry = H / 2 - MARGIN.top - 55;
 
     svg.append('ellipse').attr('class', 'track-rail-outer')
       .attr('cx', cx).attr('cy', cy).attr('rx', rx + 16).attr('ry', ry + 16);
@@ -161,23 +155,62 @@ window.DarkHorse.RaceReplay = (function () {
     const ar = State().get('activeRace');
     if (!ar) return;
 
-    raceData = State().getRaceData(ar.Date, ar.RaceIndex);
+    // Exclude withdrawn horses (WV: _runPos is all NaN or empty)
+    raceData = State().getRaceData(ar.Date, ar.RaceIndex)
+      .filter(h => h._runPos && h._runPos.length > 0 && h._runPos.some(p => !isNaN(p)));
     if (!raceData.length) return;
 
     const sample = raceData[0];
     const track = sample._track;
 
-    container.select('#replay-race-title')
-      .text(`${track.venue} — Race ${ar.RaceIndex}, ${sample['Dist.']}M ${track.surface} — ${sample.G} (${sample.RaceClass})`);
+    const titleEl = container.select('#replay-race-title');
+    titleEl.text(`${track.venue} — Race ${ar.RaceIndex}, ${sample['Dist.']}M ${track.surface} — ${sample.G} (${sample.RaceClass})`);
+
+    // Hover tooltip explaining each component of the race title
+    const Tips = window.DarkHorse.Tooltips;
+    titleEl.on('mouseenter', function (event) {
+      if (!Tips) return;
+      Tips.tip(
+        `<strong>Race ${ar.RaceIndex} — ${sample.Date}</strong><br>` +
+        `<span style="color:var(--text-muted)">Venue:</span> ${track.venue === 'ST' ? 'Sha Tin' : track.venue === 'HV' ? 'Happy Valley' : track.venue}<br>` +
+        `<span style="color:var(--text-muted)">Distance:</span> ${sample['Dist.']}m<br>` +
+        `<span style="color:var(--text-muted)">Surface:</span> ${track.surface}<br>` +
+        `<span style="color:var(--text-muted)">Course:</span> ${track.course}<br>` +
+        `<span style="color:var(--text-muted)">Going:</span> ${sample.G}<br>` +
+        `<span style="color:var(--text-muted)">Class:</span> ${sample.RaceClass}`,
+        event
+      );
+    })
+    .on('mousemove', function (event) {
+      if (!Tips) return;
+      const p = document.querySelector('.metric-tooltip-popup');
+      if (p && p.style.display !== 'none') {
+        const pad = 14;
+        let x = event.clientX + pad, y = event.clientY + pad;
+        const rect = p.getBoundingClientRect();
+        if (x + rect.width > window.innerWidth - 8)  x = event.clientX - rect.width - pad;
+        if (y + rect.height > window.innerHeight - 8) y = event.clientY - rect.height - pad;
+        p.style.left = x + 'px'; p.style.top = y + 'px';
+      }
+    })
+    .on('mouseleave', function () { if (Tips) Tips.hide(); });
 
     container.select('#replay-conditions')
       .html(_condHtml(sample.G, track.surface, track.course, sample['Dist.']));
 
+    // Attach metric tooltips to each condition label
+    if (Tips) {
+      const labelNodes = container.select('#replay-conditions').selectAll('.cond-label').nodes();
+      ['G', 'Track', 'Course', 'Dist.'].forEach((key, i) => {
+        if (labelNodes[i]) Tips.attach(labelNodes[i], key);
+      });
+    }
+
     // Determine max checkpoints
     const maxCk = d3.max(raceData, d => d._runPos.length) || 4;
 
-    // Reset time
-    State().set('replayTime', 1); // show finish by default
+    // Reset time to 0 — horses start at the starting gates
+    State().set('replayTime', 0);
     _drawHorses();
   }
 
@@ -186,8 +219,8 @@ window.DarkHorse.RaceReplay = (function () {
     const activeID = State().get('activeHorseID');
 
     const cx = W / 2, cy = H / 2 - 10;
-    const rx = W / 2 - MARGIN.left - 40;
-    const ry = H / 2 - MARGIN.top - 30;
+    const rx = W / 2 - MARGIN.left - 70;
+    const ry = H / 2 - MARGIN.top - 55;
 
     // Each horse gets a position around the track based on t and their running position
     const numRunners = raceData.length;
@@ -206,7 +239,7 @@ window.DarkHorse.RaceReplay = (function () {
 
     const enter = dots.enter().append('circle')
       .attr('class', 'horse-dot')
-      .attr('r', 7)
+      .attr('r', 5)
       .on('mouseenter', (event, d) => {
         tooltip.style('display', null)
           .html(`<div class="tt-title">${d.Name} (${d.HorseID})</div>
@@ -245,32 +278,14 @@ window.DarkHorse.RaceReplay = (function () {
         .attr('cx', x)
         .attr('cy', y)
         .attr('fill', COLORS[i % COLORS.length])
-        .attr('r', d.HorseID === activeID ? 10 : 7)
+        .attr('r', d.HorseID === activeID ? 7 : 5)
         .attr('stroke', d.HorseID === activeID ? '#fff' : 'none')
         .attr('stroke-width', d.HorseID === activeID ? 2 : 0)
         .attr('opacity', activeID && d.HorseID !== activeID ? 0.5 : 1);
     });
 
-    // Labels for top 4
-    const labels = group.selectAll('.horse-label')
-      .data(raceData.filter((d, i) => i < 6 || d.HorseID === activeID), d => d.HorseID);
-
-    labels.exit().remove();
-
-    const lEnter = labels.enter().append('text').attr('class', 'horse-label');
-    lEnter.merge(labels).each(function (d, i) {
-      const runPos = d._runPos;
-      const pos = runPos.length > 0 ? (runPos[Math.min(ckIdx, runPos.length - 1)] || 1) : (i + 1);
-      const progressAngle = -Math.PI / 2 + t * 1.5 * Math.PI;
-      const posOffset = (pos - 1) * 0.04;
-      const angle = progressAngle - posOffset;
-      const rowOffset = (raceData.indexOf(d) % 3 - 1) * 6;
-      const x = cx + (rx + rowOffset) * Math.cos(angle);
-      const y = cy + (ry + rowOffset) * Math.sin(angle);
-      d3.select(this)
-        .attr('x', x + 10).attr('y', y + 3)
-        .text(`${d._place} ${d.Name.split(' ')[0]}`);
-    });
+    // No text labels on the track
+    group.selectAll('.horse-label').remove();
 
     // Update time display
     if (raceData.length > 0) {

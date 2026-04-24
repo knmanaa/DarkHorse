@@ -3,12 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RaceAnalytics Pro — Hong Kong Horse Racing Dashboard</title>
+  <title>RaceAnalytics Pro — Hong Kong Horse Racing</title>
   <link rel="stylesheet" href="css/styles.css">
   <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 <body>
-  <!-- Top Navigation -->
+
+  <!-- Top Navigation — 2 tabs only -->
   <nav class="top-nav">
     <div class="nav-brand">
       <svg class="brand-icon" viewBox="0 0 24 24" width="28" height="28">
@@ -17,60 +18,111 @@
       <span class="brand-name">RaceAnalytics Pro</span>
     </div>
     <div class="nav-tabs">
-      <a class="nav-tab active" href="#">Dashboard</a>
-      <a class="nav-tab" href="#">Race Analysis</a>
-      <a class="nav-tab" href="#">Horse Database</a>
-      <a class="nav-tab" href="#">Jockey Profiles</a>
-      <a class="nav-tab" href="#">Genetics &amp; Breeding</a>
-      <a class="nav-tab" href="#">Gear Insights</a>
+      <button class="nav-tab active" data-tab="page-dashboard">Dashboard</button>
+      <button class="nav-tab" data-tab="page-race-analysis">Race Analysis</button>
     </div>
     <div class="nav-right">
-      <div class="search-box">
-        <svg viewBox="0 0 16 16" width="14" height="14"><path fill="#8b949e" d="M11.5 7a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0zm-.82 4.74a6 6 0 1 1 1.06-1.06l3.04 3.04a.75.75 0 1 1-1.06 1.06l-3.04-3.04z"/></svg>
-        <input type="text" placeholder="Search..." id="global-search">
-      </div>
+      <!-- Metric Dictionary button -->
+      <button class="dict-btn" id="btn-glossary" title="Dictionary">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+          <line x1="12" y1="7" x2="16" y2="7"/>
+          <line x1="12" y1="11" x2="16" y2="11"/>
+        </svg>
+        <span>Dictionary</span>
+      </button>
     </div>
   </nav>
 
-  <!-- Main Dashboard Grid -->
-  <main class="dashboard">
-    <!-- LEFT PANEL -->
-    <aside class="left-panel">
-      <div class="panel-card" id="sidebar-selector"></div>
-      <div class="panel-card" id="speed-analytics"></div>
-      <div class="panel-card" id="performance-grid"></div>
-    </aside>
+  <!-- ===== METRIC GLOSSARY — floating resizable popup ===== -->
+  <div id="glossary-overlay" class="float-popup" style="display:none; width:480px; height:560px; top:80px; right:20px;" role="dialog" aria-modal="true" aria-label="Dictionary">
+    <div class="glossary-header" id="glossary-bar">
+      <div class="glossary-title">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#58a6ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+        </svg>
+        <span>Dictionary</span>
+      </div>
+      <div class="glossary-search-wrap">
+        <svg viewBox="0 0 16 16" width="13" height="13"><path fill="#8b949e" d="M11.5 7a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0zm-.82 4.74a6 6 0 1 1 1.06-1.06l3.04 3.04a.75.75 0 1 1-1.06 1.06l-3.04-3.04z"/></svg>
+        <input type="text" id="glossary-search" placeholder="Search terms or definitions…">
+      </div>
+      <button class="glossary-close" id="glossary-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="glossary-subtitle">Hover over any <span class="gloss-q-demo">?</span> badge inside the dashboard to see a definition. Use this panel for the full list.</div>
+    <div class="glossary-body" id="glossary-body"></div>
+  </div>
 
-    <!-- CENTER PANEL -->
-    <section class="center-panel">
-      <div class="panel-card" id="race-replay"></div>
-      <div class="center-bottom-grid">
+  <!-- ===== DASHBOARD TAB — general horse info ===== -->
+  <main class="tab-page" id="page-dashboard">
+    <!-- Left: merged horse panel (search + profile + lineage + trends) -->
+    <aside class="db-left">
+      <div class="panel-card fill-col" id="horse-panel"></div>
+    </aside>
+    <!-- Right: FSpeed analytics + jockey synergy + gear impact -->
+    <section class="db-right">
+      <div class="panel-card" id="speed-analytics"></div>
+      <div class="db-bottom-grid">
         <div class="panel-card" id="synergy-matrix"></div>
         <div class="panel-card" id="gear-impact"></div>
       </div>
     </section>
-
-    <!-- RIGHT PANEL -->
-    <aside class="right-panel">
-      <div class="panel-card" id="breeding-tree"></div>
-      <div class="panel-card" id="trending-trends"></div>
-    </aside>
   </main>
 
-  <!-- Footer -->
+  <!-- ===== RACE ANALYSIS TAB — race-centric ===== -->
+  <main class="tab-page" id="page-race-analysis" style="display:none">
+    <!-- Left: race-centric runner table (slide-in drawer) -->
+    <aside class="ra-left">
+      <div class="panel-card fill-col" id="performance-grid"></div>
+      <!-- Pull-tab visible when drawer is closed -->
+      <button class="ra-pull-tab" id="ra-panel-toggle" title="Toggle runner table">Runners</button>
+    </aside>
+    <!-- Right: replay + bump chart in single resizable panel -->
+    <section class="ra-right">
+      <div class="ra-toolbar">
+        <button class="dict-btn" id="btn-bump-chart" title="Open bump chart popup">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+          <span>Bump Chart</span>
+        </button>
+      </div>
+      <div class="panel-card replay-wrap" id="replay-wrap">
+        <div id="race-replay"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Bump Chart floating popup (resizable, draggable) -->
+  <div id="bump-popup" class="float-popup" style="display:none; width:640px; height:300px; top:80px; right:20px;">
+    <div class="float-popup-bar" id="bump-popup-bar">
+      <span class="float-popup-bar-title">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+        Position Bump Chart
+      </span>
+      <button class="float-popup-close" id="bump-popup-close" aria-label="Close">×</button>
+    </div>
+    <div id="bump-chart" style="flex:1;overflow:hidden;min-height:0"></div>
+  </div>
+
   <footer class="app-footer">
-    <span>Data source: HKJC. HorsBooks. Info. Roskbooks, Ankane TDn. Tsns look.it.io.</span>
+    <span>Data source: HKJC · 2024–2025 Hong Kong Horse Racing</span>
     <span>Terms | Help</span>
   </footer>
 
-  <!-- Scripts (order matters: state -> data -> components -> app) -->
+  <!-- load order: state → data → tooltips → components → app -->
   <script src="js/GlobalState.js"></script>
   <script src="js/DataLoader.js"></script>
+  <script src="js/Tooltips.js"></script>
   <script src="js/SidebarSelector.js"></script>
   <script src="js/PerformanceGrid.js"></script>
   <script src="js/RaceReplay.js"></script>
   <script src="js/SpeedAnalytics.js"></script>
-  <script src="js/BreedingTree.js"></script>
+  <script src="js/BumpChart.js"></script>
   <script src="js/SynergyMatrix.js"></script>
   <script src="js/GearImpactAnalyzer.js"></script>
   <script src="js/app.js"></script>
