@@ -7,7 +7,7 @@ window.DarkHorse.SidebarSelector = (function () {
   const State  = () => window.DarkHorse.GlobalState;
   const Loader = () => window.DarkHorse.DataLoader;
   const Tips   = () => window.DarkHorse.Tooltips;
-  let container;
+  let container, _sortMode = 'name';
 
   function init(selector) {
     container = d3.select(selector);
@@ -34,6 +34,14 @@ window.DarkHorse.SidebarSelector = (function () {
       .attr('id', 'sidebar-horse-search')
       .on('input', function () { State().set('sidebarFilter', this.value.toLowerCase()); });
 
+    // Sort bar
+    const sortBar = container.append('div').attr('class', 'horse-sort-bar');
+    sortBar.append('span').attr('class', 'horse-sort-label').text('Sort:');
+    sortBar.append('button').attr('class', 'horse-sort-btn active').attr('id', 'ss-sort-name').text('A–Z')
+      .on('click', () => { _sortMode = 'name'; _updateSortButtons(); _renderList(); });
+    sortBar.append('button').attr('class', 'horse-sort-btn').attr('id', 'ss-sort-rtg').text('Rtg ↑')
+      .on('click', () => { _sortMode = 'rtg'; _updateSortButtons(); _renderList(); });
+
     // Horse list
     container.append('div').attr('class', 'horse-list').attr('id', 'horse-list-container');
 
@@ -52,7 +60,10 @@ window.DarkHorse.SidebarSelector = (function () {
       ? horses.filter(h =>
           h.Name.toLowerCase().includes(filter) ||
           h.HorseID.toLowerCase().includes(filter))
-      : horses.slice(0, 120);
+      : horses.slice();
+    filtered.sort((a, b) => _sortMode === 'rtg'
+      ? (+a.Rtg || 0) - (+b.Rtg || 0)
+      : a.Name.localeCompare(b.Name));
 
     const listEl = container.select('#horse-list-container');
     const rows   = listEl.selectAll('div.horse-row').data(filtered, d => d.HorseID);
@@ -74,6 +85,12 @@ window.DarkHorse.SidebarSelector = (function () {
     merged.select('.horse-name').text(d => d.Name);
     merged.select('.horse-meta').text(d => `Rtg ${d.Rtg}`);
     merged.classed('active', d => d.HorseID === State().get('activeHorseID'));
+    merged.order(); // reorder DOM nodes to match sorted data order
+  }
+
+  function _updateSortButtons() {
+    container.select('#ss-sort-name').classed('active', _sortMode === 'name');
+    container.select('#ss-sort-rtg').classed('active', _sortMode === 'rtg');
   }
 
   function _highlightActive() {
@@ -137,7 +154,8 @@ window.DarkHorse.SidebarSelector = (function () {
 
     // ---- Recent Form dots
     const formRow = profileEl.append('div').attr('class', 'recent-form');
-    formRow.append('span').attr('class', 'form-label').text('Form');
+    const formLabel = formRow.append('span').attr('class', 'form-label').text('Form');
+    if (Tips()) Tips().attach(formLabel.node(), 'Form');
     stats.recentForm.forEach(p => {
       const cls   = p === 1 ? 'win' : p <= 3 ? 'place' : 'loss';
       const label = p === 1 ? 'W'   : p <= 3 ? p       : p >= 99 ? 'X' : p;

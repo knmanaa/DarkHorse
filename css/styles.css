@@ -1,5 +1,5 @@
 /* =============================================================================
-   styles.css — RaceAnalytics Pro Dark Theme
+   styles.css — DarkHorse Dark Theme
    ============================================================================= */
 
 /* ---- CSS Variables ---- */
@@ -431,6 +431,268 @@ body {
   gap: 8px;
   flex-shrink: 0;
 }
+/* Horse selector in Race Analysis toolbar */
+.ra-sel-label {
+  font-size: .78rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.ra-horse-sel {
+  flex: 1;
+  max-width: 320px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: .82rem;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+.ra-horse-sel:focus { border-color: var(--accent-blue); outline: none; }
+/* Inline bump chart panel — fills remaining height in ra-right */
+.ra-bump-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+/* Replay open button in Race Analysis toolbar */
+.replay-open-btn {
+  padding: 4px 14px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--accent-blue);
+  font-size: .82rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--transition), border-color var(--transition);
+  margin-left: auto;
+}
+.replay-open-btn:hover { background: var(--bg-input); border-color: var(--accent-blue); }
+
+/* ---- Market Intelligence tab ---- */
+#page-market {
+  grid-template-columns: 340px 1fr;
+  grid-template-rows: 1fr;
+}
+/* Calibration chart note text */
+.oc-note {
+  font-size: .72rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* ---- PerformanceGrid dual-tab system ---- */
+.pg-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.pg-tab {
+  flex: 1;
+  padding: 6px 6px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-secondary);
+  font-size: .73rem;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color var(--transition), border-color var(--transition);
+}
+.pg-tab.active { color: var(--accent-blue); border-bottom-color: var(--accent-blue); }
+.pg-tab:hover:not(.active) { color: var(--text-primary); }
+.pg-tab-panel { display: flex; flex-direction: column; }
+.pg-horse-search-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 0 4px;
+}
+.pg-horse-filter {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: .80rem;
+  padding: 4px 8px;
+  box-sizing: border-box;
+}
+.pg-horse-filter:focus { border-color: var(--accent-blue); outline: none; }
+/* Autocomplete results list */
+.pg-ac-list {
+  max-height: 160px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+}
+.pg-ac-list:empty { display: none; }
+.pg-ac-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 5px 8px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-light);
+  transition: background var(--transition);
+}
+.pg-ac-row:last-child { border-bottom: none; }
+.pg-ac-row:hover { background: var(--bg-hover); }
+.pg-ac-name { font-size: .79rem; color: var(--text-primary); flex: 1; }
+.pg-ac-id { font-size: .71rem; color: var(--text-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.pg-ac-empty { font-size: .78rem; color: var(--text-muted); padding: 7px 10px; text-align: center; }
+.pg-ac-rtg { font-size: .69rem; color: var(--accent-blue); white-space: nowrap; margin-left: 6px; font-variant-numeric: tabular-nums; }
+.horse-sort-bar { display: flex; align-items: center; gap: 4px; padding: 4px 8px 2px; }
+.horse-sort-label { font-size: .70rem; color: var(--text-muted); margin-right: 2px; }
+.horse-sort-btn { font-size: .70rem; padding: 1px 7px; border-radius: 10px; border: 1px solid var(--border-light); background: transparent; color: var(--text-secondary); cursor: pointer; line-height: 1.6; }
+.horse-sort-btn:hover { color: var(--text-primary); border-color: var(--text-secondary); }
+.horse-sort-btn.active { color: var(--accent-blue); border-color: var(--accent-blue); background: rgba(88,166,255,.08); }
+/* Selected horse banner */
+.pg-selected-horse {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: rgba(88,166,255,.1);
+  border: 1px solid rgba(88,166,255,.35);
+  border-radius: var(--radius-sm);
+  margin-bottom: 4px;
+}
+.pg-sel-label { font-size: .80rem; font-weight: 600; color: var(--accent-blue); flex: 1; }
+.pg-sel-id { font-size: .72rem; color: var(--text-muted); }
+.pg-race-list {
+  overflow-y: auto;
+  max-height: 190px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+}
+.pg-race-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-light);
+  font-size: .77rem;
+  transition: background var(--transition);
+}
+.pg-race-row:last-child { border-bottom: none; }
+.pg-race-row:hover { background: var(--bg-hover); }
+.pg-race-row-date { color: var(--text-secondary); min-width: 68px; font-variant-numeric: tabular-nums; }
+.pg-race-row-ri { color: var(--text-primary); min-width: 46px; }
+.pg-race-row-class { color: var(--text-muted); font-size: .71rem; flex: 1; }
+.pg-race-row-place { margin-left: auto; }
+
+/* ---- Tutorial guided tour ---- */
+#tut-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  pointer-events: none; /* pass all clicks through to page while tour is active */
+}
+.tut-spotlight {
+  position: fixed;
+  border-radius: 10px;
+  /* big box-shadow creates darkened backdrop everywhere EXCEPT the spotlit rect */
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.62);
+  pointer-events: none;
+  transition: left 0.28s ease, top 0.28s ease, width 0.28s ease, height 0.28s ease, opacity 0.18s;
+  z-index: 901;
+}
+.tut-callout {
+  position: fixed;
+  width: 340px;
+  background: var(--bg-card);
+  border: 1px solid var(--accent-blue);
+  border-radius: var(--radius);
+  padding: 18px 20px 14px;
+  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.75);
+  pointer-events: all; /* buttons inside must be clickable */
+  transition: left 0.28s ease, top 0.28s ease;
+  z-index: 902;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.tut-counter {
+  font-size: .72rem;
+  font-weight: 700;
+  color: var(--accent-blue);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  margin-bottom: 7px;
+}
+.tut-title {
+  font-size: .98rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+.tut-body {
+  font-size: .83rem;
+  color: var(--text-secondary);
+  line-height: 1.58;
+  margin: 0 0 12px;
+}
+/* Progress bar */
+.tut-progress {
+  height: 3px;
+  background: var(--border);
+  border-radius: 9px;
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+.tut-progress::after {
+  content: '';
+  display: block;
+  height: 100%;
+  width: var(--tut-pct, 0%);
+  background: var(--accent-blue);
+  border-radius: 9px;
+  transition: width 0.28s ease;
+}
+.tut-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tut-btn {
+  padding: 5px 14px;
+  border-radius: var(--radius-sm);
+  font-size: .80rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  font-family: var(--font-main);
+  transition: background var(--transition), border-color var(--transition), color var(--transition), opacity var(--transition);
+  white-space: nowrap;
+}
+.tut-btn-ghost {
+  background: none;
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+.tut-btn-ghost:hover { color: var(--accent-red, #f85149); border-color: var(--accent-red, #f85149); }
+.tut-btn-secondary {
+  background: var(--bg-hover);
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
+.tut-btn-secondary:hover:not(:disabled) { color: var(--text-primary); border-color: var(--accent-blue); }
+.tut-btn-secondary:disabled { opacity: .35; cursor: default; }
+.tut-btn-primary {
+  background: var(--accent-blue);
+  color: #fff;
+  border-color: var(--accent-blue);
+  margin-left: auto;
+}
+.tut-btn-primary:hover { opacity: .86; }
 
 /* ---- Glossary popup ---- */
 .glossary-header {
@@ -841,6 +1103,10 @@ body {
   border-bottom: 1px solid var(--border); background: var(--bg-card); position: sticky; top: 0;
 }
 .synergy-table td { padding: 4px 6px; border-bottom: 1px solid var(--border-light); }
+.sortable-th { cursor: pointer; user-select: none; white-space: nowrap; }
+.sortable-th:hover { color: var(--text-primary); }
+.sort-active { color: var(--accent-blue); }
+.sort-arrow { font-size: .70rem; opacity: .7; }
 .synergy-table tr:hover { background: var(--bg-hover); }
 
 /* ---- Gear Impact ---- */

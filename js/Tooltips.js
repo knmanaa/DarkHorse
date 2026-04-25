@@ -71,6 +71,7 @@ window.DarkHorse.Tooltips = (function () {
     // ── Identity ──────────────────────────────────────────────────────────────
     'HorseID'         : 'Unique identifier assigned by the HKJC to each registered horse (e.g. H057).',
     'Country'         : 'Country of origin / breeding country of the horse (e.g. AUS = Australia, IRE = Ireland, NZ = New Zealand).',
+    'Form'            : 'Recent finishing positions, oldest left → newest right. Green = Win (W), orange = Top 3 (number shown), red = outside Top 3. X = Did Not Finish (DNF). A strong horse shows W / small numbers on the right.',
   };
 
   // ---- Singleton floating popup ----

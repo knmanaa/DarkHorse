@@ -5,8 +5,8 @@ window.DarkHorse = window.DarkHorse || {};
 
 window.DarkHorse.SpeedAnalytics = (function () {
   const State = () => window.DarkHorse.GlobalState;
-  let container, svgPos, svgLine, svgBar, tooltip;
-  const W = 288, H_POS = 68, H_LINE = 96, H_BAR = 86;
+  let container, body, svgPos, svgLine, tooltip;
+  const W = 288, H_POS = 68, H_LINE = 96;
   const M = { top: 14, right: 12, bottom: 30, left: 36 };
 
   function init(selector) {
@@ -21,7 +21,7 @@ window.DarkHorse.SpeedAnalytics = (function () {
     const header = container.append('div').attr('class', 'panel-header');
     header.append('span').text('Performance Trends');
 
-    const body = container.append('div').attr('class', 'panel-body')
+    body = container.append('div').attr('class', 'panel-body')
       .style('padding', '4px 8px');
 
     // ── 1. Finish Position sparkline ─────────────────────────────────────────
@@ -46,48 +46,38 @@ window.DarkHorse.SpeedAnalytics = (function () {
     svgLine = body.append('svg').attr('class', 'speed-chart')
       .attr('viewBox', `0 0 ${W} ${H_LINE}`).attr('preserveAspectRatio', 'xMidYMid meet');
 
-    // ── 3. LBW & Win Odds ───────────────────────────────────────────────
-    const subHead = body.append('div')
-      .style('display', 'flex').style('gap', '6px')
-      .style('margin-top', '6px').style('font-size', '.78rem')
-      .style('color', 'var(--text-secondary)').style('font-weight', '600')
-      .style('align-items', 'center');
-    const lbwSpan = subHead.append('span').text('LBW');
-    subHead.append('span').style('color', 'var(--text-muted)').text('&');
-    const oddsSpan = subHead.append('span').text('Win Odds');
-    if (Tips()) {
-      Tips().attach(lbwSpan.node(), 'LBW');
-      Tips().attach(oddsSpan.node(), 'Win Odds');
-    }
-
-    svgBar = body.append('svg').attr('class', 'speed-chart')
-      .attr('viewBox', `0 0 ${W} ${H_BAR}`).attr('preserveAspectRatio', 'xMidYMid meet');
-
-    body.append('div')
-      .style('font-size', '.68rem').style('color', 'var(--text-muted)')
-      .style('padding', '2px 4px 0').style('line-height', '1.4')
-      .text('LBW bars (left) colored by finish pos. Win Odds (right, purple). Hover bars for details.');
-
     tooltip = d3.select('body').selectAll('.d3-tooltip.speed-tt').data([0])
       .join('div').attr('class', 'd3-tooltip speed-tt').style('display', 'none');
+
+    // Notice shown when horse has only one race record
+    body.append('div').attr('class', 'sa-single-notice').style('display', 'none')
+      .html('<div style="padding:24px 8px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;">' +
+        '<div style="font-size:1.5rem;">📊</div>' +
+        '<div style="font-weight:700;color:var(--accent-red);">Only 1 race on record' +
+        ' <span style="color:var(--text-muted);font-weight:400;">/</span>' +
+        ' Trend plots require at least 2 races to display.</div>' +
+        '</div>');
   }
 
   function _update() {
     const hid = State().get('activeHorseID');
     svgPos.selectAll('*').remove();
     svgLine.selectAll('*').remove();
-    svgBar.selectAll('*').remove();
+    const notice = body ? body.select('.sa-single-notice') : null;
+    if (notice) notice.style('display', 'none');
     if (!hid) return;
 
     // Sort chronologically: oldest on left, newest (latest) on right
     const allSorted = State().getHorseData(hid)
       .slice().sort((a, b) => a._parsedDate - b._parsedDate);
     const records = allSorted.slice(-10);
-    if (records.length < 2) return;
+    if (records.length < 2) {
+      if (notice) notice.style('display', null);
+      return;
+    }
 
     _drawPositionSpark(records);
     _drawFSpeedLine(records);
-    _drawLBWBars(records);
   }
 
   // Boundary-aware tooltip positioning — flips to the left when near the right edge
@@ -226,94 +216,6 @@ window.DarkHorse.SpeedAnalytics = (function () {
         _ttPos(event);
       })
       .on('mouseleave', () => tooltip.style('display', 'none'));
-  }
-
-  function _drawLBWBars(data) {
-    const x = d3.scaleBand().domain(data.map((d, i) => i)).range([M.left, W - M.right]).padding(0.25);
-    const yLBW = d3.scaleLinear()
-      .domain([0, d3.max(data, d => d.LBW) || 5])
-      .range([H_BAR - M.bottom, M.top]);
-
-    // Axes — X uses full dates (DD/MM/YYYY) rotated, Y is LBW
-    svgBar.append('g').attr('class', 'speed-axis')
-      .attr('transform', `translate(0,${H_BAR - M.bottom})`)
-      .call(d3.axisBottom(x)
-        .tickFormat(i => data[i] ? data[i].Date : '')
-        .tickSize(3))
-      .select('.domain').remove();
-    svgBar.selectAll('.speed-axis text')
-      .style('font-size', '5.5px')
-      .attr('transform', 'rotate(-40)')
-      .style('text-anchor', 'end')
-      .attr('dx', '-2').attr('dy', '2');
-
-    // Left Y axis for LBW
-    svgBar.append('g').attr('class', 'speed-axis y-axis')
-      .attr('transform', `translate(${M.left},0)`)
-      .call(d3.axisLeft(yLBW).ticks(2).tickSize(0).tickFormat(d => d.toFixed(0)))
-      .select('.domain').remove();
-    svgBar.selectAll('.y-axis text').style('font-size', '7px');
-
-    // Y-axis label
-    svgBar.append('text')
-      .attr('transform', 'rotate(-90)')
-      .attr('x', -(H_BAR / 2)).attr('y', 9)
-      .attr('text-anchor', 'middle').attr('fill', 'var(--text-muted)').style('font-size', '8px')
-      .text('LBW (lengths)');
-
-    // LBW bars
-    svgBar.selectAll('.lbw-bar').data(data).enter()
-      .append('rect').attr('class', 'lbw-bar')
-      .attr('x', (d, i) => x(i)).attr('y', d => yLBW(Math.max(d.LBW, 0)))
-      .attr('width', x.bandwidth() / 2)
-      .attr('height', d => H_BAR - M.bottom - yLBW(Math.max(d.LBW, 0)))
-      .attr('fill', d => d._place === 1 ? 'var(--accent-green)' : d._place <= 3 ? 'var(--accent-orange)' : 'var(--accent-red)')
-      .attr('rx', 2).attr('opacity', 0.8)
-      .on('mouseenter', (event, d) => {
-        tooltip.style('display', null)
-          .html(`<div class="tt-title">${d.Date} · Race ${d.RaceIndex}</div>
-                 <div class="tt-row"><span class="tt-label">Finish pos:</span><span>${d._place >= 99 ? 'DNF' : d._place}</span></div>
-                 <div class="tt-row"><span class="tt-label">LBW:</span><span>${(+d.LBW || 0).toFixed(2)} lengths</span></div>
-                 <div class="tt-row"><span class="tt-label">FSpeed:</span><span>${d.FSpeed.toFixed(2)}s</span></div>
-                 <div class="tt-row"><span class="tt-label">Dist:</span><span>${d['Dist.']}m</span></div>`);
-        _ttPos(event);
-      })
-      .on('mousemove', event => _ttPos(event))
-      .on('mouseleave', () => tooltip.style('display', 'none'));
-
-    // Win Odds bars (secondary)
-    const yOdds = d3.scaleLinear()
-      .domain([0, d3.max(data, d => d['Win Odds']) || 30])
-      .range([H_BAR - M.bottom, M.top]);
-
-    svgBar.selectAll('.odds-bar').data(data).enter()
-      .append('rect').attr('class', 'odds-bar')
-      .attr('x', (d, i) => x(i) + x.bandwidth() / 2).attr('y', d => yOdds(d['Win Odds']))
-      .attr('width', x.bandwidth() / 2)
-      .attr('height', d => H_BAR - M.bottom - yOdds(d['Win Odds']))
-      .attr('fill', 'var(--accent-purple)').attr('rx', 2).attr('opacity', 0.5)
-      .on('mouseenter', (event, d) => {
-        tooltip.style('display', null)
-          .html(`<div class="tt-title">${d.Date} · Race ${d.RaceIndex}</div>
-                 <div class="tt-row"><span class="tt-label">Finish pos:</span><span>${d._place >= 99 ? 'DNF' : d._place}</span></div>
-                 <div class="tt-row"><span class="tt-label">Win Odds:</span><span>${(+d['Win Odds'] || 0).toFixed(1)}×</span></div>
-                 <div class="tt-row"><span class="tt-label">LBW:</span><span>${(+d.LBW || 0).toFixed(2)} lengths</span></div>
-                 <div class="tt-row"><span class="tt-label">Jockey:</span><span>${d.Jockey}</span></div>`);
-        _ttPos(event);
-      })
-      .on('mousemove', event => _ttPos(event))
-      .on('mouseleave', () => tooltip.style('display', 'none'));
-
-    // Legend — LBW bars are colored by finish position; Win Odds is purple
-    [
-      { x: M.left + 4,   color: 'var(--accent-green)',  label: '■ 1st (LBW)'  },
-      { x: M.left + 62,  color: 'var(--accent-orange)', label: '■ Top 3'       },
-      { x: M.left + 102, color: 'var(--accent-red)',     label: '■ Other'       },
-      { x: M.left + 138, color: 'var(--accent-purple)', label: '■ W.Odds'      },
-    ].forEach(({ x, color, label }) => {
-      svgBar.append('text').attr('x', x).attr('y', 10)
-        .attr('fill', color).style('font-size', '8px').text(label);
-    });
   }
 
   return { init };

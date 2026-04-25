@@ -54,7 +54,7 @@ Representative analytical questions the dashboard helps answer:
 
 #### Dataset
 
-Download the 2024–2025 Hong Kong Horse Racing raw data from:
+The dataset 2024–2025 Hong Kong Horse Racing raw data is downloaded from:
 
 > **https://horseracinghk.com/2024-2025-%e9%a6%ac%e5%ad%a3%e5%8e%9f%e5%a7%8b%e6%95%b8%e6%93%9a%e4%b8%8b%e8%bc%89/**
 

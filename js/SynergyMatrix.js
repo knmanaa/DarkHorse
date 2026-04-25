@@ -1,5 +1,5 @@
 // =============================================================================
-// SynergyMatrix.js — Jockey × Horse combination analysis
+// SynergyMatrix.js — Jockey & Horse panel (trainer fixed display + jockey table)
 // =============================================================================
 window.DarkHorse = window.DarkHorse || {};
 
@@ -16,23 +16,20 @@ window.DarkHorse.SynergyMatrix = (function () {
   function _render() {
     container.html('');
     container.append('div').attr('class', 'panel-header')
-      .html('<span>Jockey &amp; Trainers</span>');
+      .html('<span>Jockey &amp; Horse</span>');
 
-    // Controls
-    const controls = container.append('div').attr('class', 'synergy-controls');
-    controls.append('label').text("Jockey's Name and Horse Combination");
-
+    // Fixed display label (no dropdown)
     container.append('div').attr('class', 'synergy-controls').attr('id', 'synergy-selectors');
     container.append('div').attr('id', 'synergy-content').attr('class', 'panel-body');
   }
 
   function _update() {
     const hid = State().get('activeHorseID');
-    const content = container.select('#synergy-content');
+    const content   = container.select('#synergy-content');
     const selectors = container.select('#synergy-selectors');
 
     if (!hid) {
-      content.html('<div class="empty-state">Select a horse to view jockey synergy</div>');
+      content.html('<div class="empty-state">Select a horse to view trainer & jockey info</div>');
       selectors.html('');
       return;
     }
@@ -40,56 +37,50 @@ window.DarkHorse.SynergyMatrix = (function () {
     const records = State().getHorseData(hid);
     if (!records.length) return;
 
-    const latest = records[records.length - 1];
+    const latest  = records[records.length - 1];
+    const trainer = latest.Trainer;
 
-    // Get unique jockeys for this horse
-    const jockeys = [...new Set(records.map(r => r.Jockey))].sort();
-
-    // Selectors
+    // Fixed display: clearly labeled Trainer and Horse
     selectors.html('');
-    const jSel = selectors.append('select').attr('id', 'synergy-jockey-select');
-    jockeys.forEach(j => {
-      jSel.append('option').attr('value', j)
-        .property('selected', j === latest.Jockey)
-        .text(j);
-    });
-    selectors.append('span').style('color', 'var(--text-secondary)').style('margin', '0 4px').text('&');
-    selectors.append('span').style('font-weight', '600').text(latest.Name);
-    jSel.on('change', () => _renderCombo(records));
+    const trainerGroup = selectors.append('span').style('display','inline-flex').style('align-items','center').style('gap','3px');
+    trainerGroup.append('span').style('font-size','.73rem').style('color','var(--text-muted)').text('Trainer:');
+    trainerGroup.append('span').style('font-weight','600').style('font-size','.82rem').text(trainer);
+    selectors.append('span').style('color','var(--text-muted)').style('margin','0 10px').text('·');
+    const horseGroup = selectors.append('span').style('display','inline-flex').style('align-items','center').style('gap','3px');
+    horseGroup.append('span').style('font-size','.73rem').style('color','var(--text-muted)').text('Horse:');
+    horseGroup.append('span').style('font-weight','600').style('font-size','.82rem').text(latest.Name);
 
-    _renderCombo(records);
+    _renderTrainerData(records, content, latest);
   }
 
-  function _renderCombo(records) {
-    const content = container.select('#synergy-content');
+  function _renderTrainerData(records, content, latest) {
+    const Tips = window.DarkHorse.Tooltips;
     content.html('');
 
-    const Tips = window.DarkHorse.Tooltips;
+    const currentJockey = latest.Jockey;
 
-    const selJockey = container.select('#synergy-jockey-select').node();
-    const jockey = selJockey ? selJockey.value : records[records.length - 1].Jockey;
+    content.append('div')
+      .style('font-size', '.78rem').style('color', 'var(--text-muted)').style('padding', '2px 0 6px')
+      .text(`Current Jockey: ${currentJockey}`);
 
-    const comboRecords = records.filter(r => r.Jockey === jockey);
-    const allJockeyRecords = State().get('allData').filter(r => r.Jockey === jockey);
-
-    // Joint Performance Overview
+    // Trainer × Horse stats (all time)
     content.append('div').style('font-weight', '600').style('font-size', '.82rem')
-      .style('padding', '4px 0').style('color', 'var(--accent-blue)').text('Joint Performance Overview');
+      .style('padding', '0 0 4px').style('color', 'var(--accent-blue)')
+      .text('Trainer × Horse Performance');
 
-    const stats = content.append('div').attr('class', 'synergy-stats');
-    const total = comboRecords.length;
-    const wins = comboRecords.filter(r => r._place === 1).length;
-    const places = comboRecords.filter(r => r._place <= 3).length;
-    const avgPos = total ? d3.mean(comboRecords, r => r._place) : 0;
-    const avgLBW = total ? d3.mean(comboRecords, r => r.LBW) : 0;
+    const stats   = content.append('div').attr('class', 'synergy-stats');
+    const total   = records.length;
+    const wins    = records.filter(r => r._place === 1).length;
+    const places  = records.filter(r => r._place <= 3).length;
+    const avgPos  = total ? d3.mean(records, r => r._place) : 0;
+    const avgFS   = total ? d3.mean(records, r => r.FSpeed) : 0;
 
     [
-      { val: total,                                                               lbl: 'Common Races', tipKey: 'Common Races'  },
-      { val: total > 0 ? (wins / total * 100).toFixed(0) + '%' : '0%',           lbl: 'Win%',         tipKey: 'Win%'         },
-      { val: total > 0 ? (places / total * 100).toFixed(0) + '%' : '0%',         lbl: 'Place%',       tipKey: 'Place%'       },
-      { val: avgPos.toFixed(1),                                                   lbl: 'Avg Position', tipKey: 'Avg Position' },
-      { val: avgLBW.toFixed(1) + 'L',                                             lbl: 'Avg LBW',      tipKey: 'Avg LBW'     },
-      { val: total > 0 ? d3.mean(comboRecords, r => r.FSpeed).toFixed(2) : '--', lbl: 'Avg FSpeed',   tipKey: 'Avg FSpeed'  },
+      { val: total,                                                          lbl: 'Races',        tipKey: 'Races'       },
+      { val: total > 0 ? (wins   / total * 100).toFixed(0) + '%' : '0%',   lbl: 'Win%',         tipKey: 'Win%'        },
+      { val: total > 0 ? (places / total * 100).toFixed(0) + '%' : '0%',   lbl: 'Place%',       tipKey: 'Place%'      },
+      { val: avgPos.toFixed(1),                                              lbl: 'Avg Position', tipKey: 'Avg Position'},
+      { val: total > 0 ? avgFS.toFixed(2) + 's' : '--',                    lbl: 'Avg FSpeed',   tipKey: 'Avg FSpeed'  },
     ].forEach(s => {
       const box = stats.append('div').attr('class', 'synergy-stat');
       box.append('div').attr('class', 'val').text(s.val);
@@ -97,44 +88,64 @@ window.DarkHorse.SynergyMatrix = (function () {
       if (Tips && s.tipKey) Tips.attach(lbl.node(), s.tipKey);
     });
 
-    // Trainer Performance Table
+    // Jockeys who have ridden this horse
     content.append('div').style('font-weight', '600').style('font-size', '.82rem')
-      .style('padding', '8px 0 4px').style('color', 'var(--accent-blue)').text('Trainer Performance');
+      .style('padding', '10px 0 4px').style('color', 'var(--accent-blue)')
+      .text('Jockeys on This Horse');
 
-    const trainers = d3.group(allJockeyRecords, d => d.Trainer);
-    const trainerStats = Array.from(trainers, ([trainer, recs]) => {
+    const jockeyGroups = d3.group(records, d => d.Jockey);
+    const jockeyData  = Array.from(jockeyGroups, ([jockey, recs]) => {
       const w = recs.filter(r => r._place === 1).length;
       const t = recs.length;
       return {
-        trainer,
-        winPct: t > 0 ? (w / t * 100).toFixed(1) : '0',
-        total: t,
-        wins: w,
-        avgPos: d3.mean(recs, r => r._place).toFixed(1),
-        avgRenumeration: '0.0',
+        jockey, wins: w, total: t,
+        winPct : t > 0 ? (w / t * 100) : 0,
+        avgPos : d3.mean(recs, r => r._place),
       };
-    }).sort((a, b) => b.wins - a.wins).slice(0, 8);
-
-    const table = content.append('table').attr('class', 'synergy-table');
-    const thead = table.append('thead').append('tr');
-    [
-      { label: 'Trainer', tipKey: null       },
-      { label: 'Win %',   tipKey: 'Win %'    },
-      { label: 'Wo.',     tipKey: 'Wo.'      },
-      { label: 'Avg.P.',  tipKey: 'Avg.P.'   },
-    ].forEach(col => {
-      const th = thead.append('th').text(col.label);
-      if (Tips && col.tipKey) Tips.attach(th.node(), col.tipKey);
     });
 
-    const tbody = table.append('tbody');
-    trainerStats.forEach(ts => {
-      const tr = tbody.append('tr');
-      tr.append('td').text(ts.trainer);
-      tr.append('td').text(ts.winPct + '%');
-      tr.append('td').text(ts.wins + '/' + ts.total);
-      tr.append('td').text(ts.avgPos);
-    });
+    const JCOLS = [
+      { label: 'Jockey', key: 'jockey',  num: false },
+      { label: 'Win %',  key: 'winPct',  num: true  },
+      { label: 'Wo.',    key: 'total',   num: true  },
+      { label: 'Avg.P.', key: 'avgPos',  num: true  },
+    ];
+
+    let jSortKey = 'total', jSortAsc = false;
+
+    const jTableWrap = content.append('div');
+    const renderJTable = () => {
+      jTableWrap.html('');
+      const sorted = jockeyData.slice().sort((a, b) => {
+        const va = a[jSortKey], vb = b[jSortKey];
+        const cmp = typeof va === 'string' ? va.localeCompare(vb) : va - vb;
+        return jSortAsc ? cmp : -cmp;
+      });
+      const table = jTableWrap.append('table').attr('class', 'synergy-table sortable-table');
+      const thead = table.append('thead').append('tr');
+      JCOLS.forEach(col => {
+        const active = col.key === jSortKey;
+        const th = thead.append('th')
+          .attr('class', 'sortable-th' + (active ? ' sort-active' : ''))
+          .html(col.label + `<span class="sort-arrow">${active ? (jSortAsc ? ' ▲' : ' ▼') : ' ⇅'}</span>`)
+          .on('click', () => {
+            if (jSortKey === col.key) jSortAsc = !jSortAsc;
+            else { jSortKey = col.key; jSortAsc = col.num ? false : true; }
+            renderJTable();
+          });
+        if (Tips) Tips.attach(th.node(), col.label);
+      });
+      const tbody = table.append('tbody');
+      sorted.forEach(js => {
+        const tr = tbody.append('tr');
+        if (js.jockey === currentJockey) tr.style('color', 'var(--accent-blue)').style('font-weight', '600');
+        tr.append('td').text(js.jockey);
+        tr.append('td').text(js.winPct.toFixed(0) + '%');
+        tr.append('td').text(js.wins + '/' + js.total);
+        tr.append('td').text(js.avgPos.toFixed(1));
+      });
+    };
+    renderJTable();
   }
 
   return { init };

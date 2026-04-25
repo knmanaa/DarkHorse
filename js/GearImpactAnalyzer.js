@@ -92,59 +92,59 @@ window.DarkHorse.GearImpactAnalyzer = (function () {
 
     const Tips = window.DarkHorse.Tooltips;
 
-    // Column definitions: key, label, tipKey
+    // Column definitions with sort keys
     const COLS = [
-      { label: 'Gear',       tipKey: 'Gear'      },
-      { label: 'Races',      tipKey: 'Races'     },
-      { label: 'Avg FSpeed', tipKey: 'Avg FSpeed'},
-      { label: 'Win %',      tipKey: 'Win %'     },
-      { label: 'Δ FSpeed',   tipKey: 'Δ FSpeed'  },
+      { label: 'Gear',       key: 'gearName',  num: false, tipKey: 'Gear'      },
+      { label: 'Races',      key: 'count',      num: true,  tipKey: 'Races'     },
+      { label: 'Avg FSpeed', key: 'avgFSpeed',  num: true,  tipKey: 'Avg FSpeed'},
+      { label: 'Win %',      key: 'winPct',     num: true,  tipKey: 'Win %'     },
+      { label: 'Δ FSpeed',   key: 'delta',      num: true,  tipKey: 'Δ FSpeed'  },
     ];
 
+    let gSortKey = 'delta', gSortAsc = true; // default: best delta first (ascending = faster)
+
     const tableDiv = body.append('div').style('padding', '4px');
-    const table = tableDiv.append('table').attr('class', 'synergy-table');
-    const thead = table.append('thead').append('tr');
-    COLS.forEach(col => {
-      const th = thead.append('th').text(col.label);
-      if (Tips) Tips.attach(th.node(), col.tipKey);
-    });
-
-    const tbody = table.append('tbody');
-
-    impacts.forEach(imp => {
-      const tr = tbody.append('tr');
-
-      // Gear name (truncated with title for long combos)
-      tr.append('td')
-        .attr('title', imp.gearName)
-        .style('max-width', '120px')
-        .style('white-space', 'nowrap')
-        .style('overflow', 'hidden')
-        .style('text-overflow', 'ellipsis')
-        .text(imp.gearName);
-
-      // Races
-      tr.append('td').text(imp.count);
-
-      // Avg FSpeed
-      tr.append('td').text(imp.avgFSpeed.toFixed(2) + 's');
-
-      // Win %
-      tr.append('td').text(imp.winPct.toFixed(1) + '%');
-
-      // Δ FSpeed — green if negative (faster), red if positive (slower)
-      const faster = imp.delta < 0;
-      const neutral = Math.abs(imp.delta) < 0.001;
-      const deltaColor = neutral
-        ? 'var(--text-secondary)'
-        : faster ? 'var(--accent-green)' : 'var(--accent-red)';
-      tr.append('td')
-        .style('font-weight', '600')
-        .style('font-family', 'var(--font-mono)')
-        .style('color', deltaColor)
-        .text(neutral ? '—'
-          : (faster ? '▼ ' : '▲ ') + Math.abs(imp.delta).toFixed(2) + 's');
-    });
+    const renderGTable = () => {
+      tableDiv.html('');
+      const sorted = impacts.slice().sort((a, b) => {
+        const va = a[gSortKey], vb = b[gSortKey];
+        const cmp = typeof va === 'string' ? va.localeCompare(vb) : va - vb;
+        return gSortAsc ? cmp : -cmp;
+      });
+      const table = tableDiv.append('table').attr('class', 'synergy-table sortable-table');
+      const thead = table.append('thead').append('tr');
+      COLS.forEach(col => {
+        const active = col.key === gSortKey;
+        const th = thead.append('th')
+          .attr('class', 'sortable-th' + (active ? ' sort-active' : ''))
+          .html(col.label + `<span class="sort-arrow">${active ? (gSortAsc ? ' ▲' : ' ▼') : ' ⇅'}</span>`)
+          .on('click', () => {
+            if (gSortKey === col.key) gSortAsc = !gSortAsc;
+            else { gSortKey = col.key; gSortAsc = col.num ? true : true; }
+            renderGTable();
+          });
+        if (Tips) Tips.attach(th.node(), col.tipKey);
+      });
+      const tbody = table.append('tbody');
+      sorted.forEach(imp => {
+        const tr = tbody.append('tr');
+        tr.append('td')
+          .attr('title', imp.gearName)
+          .style('max-width', '120px').style('white-space', 'nowrap')
+          .style('overflow', 'hidden').style('text-overflow', 'ellipsis')
+          .text(imp.gearName);
+        tr.append('td').text(imp.count);
+        tr.append('td').text(imp.avgFSpeed.toFixed(2) + 's');
+        tr.append('td').text(imp.winPct.toFixed(1) + '%');
+        const faster = imp.delta < 0;
+        const neutral = Math.abs(imp.delta) < 0.001;
+        tr.append('td')
+          .style('font-weight', '600').style('font-family', 'var(--font-mono)')
+          .style('color', neutral ? 'var(--text-secondary)' : faster ? 'var(--accent-green)' : 'var(--accent-red)')
+          .text(neutral ? '—' : (faster ? '▼ ' : '▲ ') + Math.abs(imp.delta).toFixed(2) + 's');
+      });
+    };
+    renderGTable();
   }
 
   return { init };

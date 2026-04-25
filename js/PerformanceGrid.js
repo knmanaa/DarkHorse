@@ -7,7 +7,7 @@ window.DarkHorse.PerformanceGrid = (function () {
   const State = () => window.DarkHorse.GlobalState;
   const Tips  = () => window.DarkHorse.Tooltips;
   let container, allData = [], _availableDates = [], _validDateSet = new Set(), _currentDateISO = '';
-  let _calYear = 0, _calMonth = 0;
+  let _calYear = 0, _calMonth = 0, _activeTab = 'date', _hsSortMode = 'name';
 
   // Columns shown in the "all runners" table
   const COLUMNS = [
@@ -55,7 +55,7 @@ window.DarkHorse.PerformanceGrid = (function () {
   function init(selector) {
     container = d3.select(selector);
     _render();
-    State().on('allData', data => { allData = data; _populateDatePicker(); });
+    State().on('allData', data => { allData = data; _populateDatePicker(); _populateHorseTab(); });
     State().on('activeRace', _highlightRow);
     // Toggle for the slide-in drawer
     document.getElementById('ra-panel-toggle').addEventListener('click', () => {
@@ -72,22 +72,28 @@ window.DarkHorse.PerformanceGrid = (function () {
     container.html('');
     container.append('div').attr('class', 'panel-header').html('<span>Race Runner Table</span>');
 
-    // Race picker
-    const picker = container.append('div').attr('class', 'race-picker');
+    // ---- Tab bar ----
+    const tabBar = container.append('div').attr('class', 'pg-tabs');
+    tabBar.append('button').attr('class', 'pg-tab active').attr('id', 'pg-tab-date').text('Select Race by Date')
+      .on('click', () => _switchTab('date'));
+    tabBar.append('button').attr('class', 'pg-tab').attr('id', 'pg-tab-horse').text('Select Race by Horse')
+      .on('click', () => _switchTab('horse'));
+
+    // ---- Date Panel ----
+    const datePanel = container.append('div').attr('class', 'pg-tab-panel').attr('id', 'pg-date-panel');
+    const picker = datePanel.append('div').attr('class', 'race-picker');
     const row1 = picker.append('div').attr('class', 'race-picker-row');
     row1.append('label').text('Date');
     row1.append('button').attr('class', 'race-nav-btn').attr('id', 'rp-prev').text('◄')
       .on('click', () => _stepDate(-1));
 
-    // Custom calendar button + popup
     const calWrap = row1.append('div').attr('class', 'cal-wrap');
     calWrap.append('button').attr('class', 'cal-btn').attr('id', 'rp-date-btn').text('—')
       .on('click', function (event) {
         event.stopPropagation();
         _toggleCalPopup();
       });
-    calWrap.append('div').attr('class', 'cal-popup').attr('id', 'rp-cal-popup')
-      .style('display', 'none');
+    calWrap.append('div').attr('class', 'cal-popup').attr('id', 'rp-cal-popup').style('display', 'none');
 
     row1.append('button').attr('class', 'race-nav-btn').attr('id', 'rp-next').text('►')
       .on('click', () => _stepDate(1));
@@ -96,8 +102,127 @@ window.DarkHorse.PerformanceGrid = (function () {
     row2.append('label').text('Race');
     row2.append('select').attr('id', 'rp-race').on('change', _loadRace);
 
+    // ---- Horse Panel ----
+    const horsePanel = container.append('div').attr('class', 'pg-tab-panel').attr('id', 'pg-horse-panel').style('display', 'none');
+    const hsSortBar = horsePanel.append('div').attr('class', 'horse-sort-bar');
+    hsSortBar.append('span').attr('class', 'horse-sort-label').text('Sort:');
+    hsSortBar.append('button').attr('class', 'horse-sort-btn active').attr('id', 'pg-sort-name').text('A–Z')
+      .on('click', () => { _hsSortMode = 'name'; _updateHsSortButtons(); _resortAndRender(); });
+    hsSortBar.append('button').attr('class', 'horse-sort-btn').attr('id', 'pg-sort-rtg').text('Rtg ↑')
+      .on('click', () => { _hsSortMode = 'rtg'; _updateHsSortButtons(); _resortAndRender(); });
+    const hsWrap = horsePanel.append('div').attr('class', 'pg-horse-search-wrap');
+    hsWrap.append('input').attr('type', 'text').attr('id', 'pg-horse-filter')
+      .attr('class', 'pg-horse-filter').attr('placeholder', 'Search by name or ID…');
+    hsWrap.append('div').attr('id', 'pg-ac-list').attr('class', 'pg-ac-list');
+    horsePanel.append('div').attr('id', 'pg-selected-horse').attr('class', 'pg-selected-horse').style('display', 'none');
+    horsePanel.append('div').attr('id', 'pg-race-list').attr('class', 'pg-race-list');
+
+    // ---- Shared runner table (below both tabs) ----
     container.append('div').attr('class', 'panel-body').attr('id', 'perf-table-wrap')
       .html('<div class="empty-state">Select a date and race above</div>');
+  }
+
+  // ---- Tab switching -------------------------------------------------------
+  function _switchTab(tab) {
+    _activeTab = tab;
+    container.select('#pg-date-panel').style('display', tab === 'date' ? '' : 'none');
+    container.select('#pg-horse-panel').style('display', tab === 'horse' ? '' : 'none');
+    container.select('#pg-tab-date').classed('active', tab === 'date');
+    container.select('#pg-tab-horse').classed('active', tab === 'horse');
+  }
+
+  // ---- Horse tab: autocomplete search ------------------------------------
+  let _allHorses = [];
+
+  function _populateHorseTab() {
+    _allHorses = State().getUniqueHorses().slice();
+
+    const filterInput = container.select('#pg-horse-filter');
+    if (!filterInput.node()) return;
+
+    filterInput.on('input', _resortAndRender);
+    _resortAndRender();
+  }
+
+  function _updateHsSortButtons() {
+    container.select('#pg-sort-name').classed('active', _hsSortMode === 'name');
+    container.select('#pg-sort-rtg').classed('active', _hsSortMode === 'rtg');
+  }
+
+  function _resortAndRender() {
+    const q = (container.select('#pg-horse-filter').property('value') || '').toLowerCase().trim();
+    let horses = _allHorses.slice();
+    if (q) horses = horses.filter(h =>
+      h.Name.toLowerCase().includes(q) || h.HorseID.toLowerCase().includes(q));
+    horses.sort((a, b) => _hsSortMode === 'rtg'
+      ? (+a.Rtg || 0) - (+b.Rtg || 0)
+      : a.Name.localeCompare(b.Name));
+    _renderAcList(horses);
+  }
+
+  function _renderAcList(horses) {
+    const list = container.select('#pg-ac-list');
+    list.html('');
+    if (!horses.length) {
+      list.append('div').attr('class', 'pg-ac-empty').text('No matching horses');
+      return;
+    }
+    horses.forEach(h => {
+      const row = list.append('div').attr('class', 'pg-ac-row')
+        .on('click', () => _selectHorse(h));
+      row.append('span').attr('class', 'pg-ac-name').text(h.Name);
+      row.append('span').attr('class', 'pg-ac-id').text(h.HorseID);
+      row.append('span').attr('class', 'pg-ac-rtg').text('Rtg ' + (h.Rtg || '—'));
+    });
+  }
+
+  function _selectHorse(horse) {
+    // Update search box to show the selected horse
+    container.select('#pg-horse-filter').property('value', horse.Name);
+    // Clear autocomplete list
+    container.select('#pg-ac-list').html('');
+    // Show selected badge
+    const badge = container.select('#pg-selected-horse').style('display', '');
+    badge.html('');
+    badge.append('span').attr('class', 'pg-sel-label').text(`${horse.Name}`);
+    badge.append('span').attr('class', 'pg-sel-id').text(`ID: ${horse.HorseID}`);
+    // Load race list
+    _renderHorseRaceList(horse.HorseID);
+  }
+
+  function _renderHorseRaceList(hid) {
+    const horseRecs = allData.filter(d => d.HorseID === hid);
+    // Unique race entries sorted newest first
+    const raceMap = new Map();
+    horseRecs.forEach(d => {
+      const key = d.Date + '|' + d.RaceIndex;
+      if (!raceMap.has(key)) raceMap.set(key, d);
+    });
+    const races = Array.from(raceMap.values()).sort((a, b) => {
+      const [da, ma, ya] = a.Date.split('/').map(Number);
+      const [db, mb, yb] = b.Date.split('/').map(Number);
+      return new Date(yb, mb - 1, db) - new Date(ya, ma - 1, da);
+    });
+
+    const list = container.select('#pg-race-list');
+    list.html('');
+    if (!races.length) { list.html('<div class="empty-state">No races found</div>'); return; }
+
+    races.forEach(r => {
+      const row = list.append('div').attr('class', 'pg-race-row')
+        .on('click', () => {
+          State().set('activeRace', { Date: r.Date, RaceIndex: +r.RaceIndex });
+          _renderRunnerTable(r.Date, +r.RaceIndex);
+        });
+      row.append('span').attr('class', 'pg-race-row-date').text(r.Date);
+      row.append('span').attr('class', 'pg-race-row-ri').text(`Race ${r.RaceIndex}`);
+      if (r.RaceClass) row.append('span').attr('class', 'pg-race-row-class').text(r.RaceClass);
+      const placeSpan = row.append('span').attr('class', 'pg-race-row-place');
+      if (r._place && r._place < 99) {
+        const cls = r._place === 1 ? 'place-1' : r._place === 2 ? 'place-2' : r._place === 3 ? 'place-3' : 'place-other';
+        placeSpan.append('span').attr('class', `place-badge ${cls}`).text(r._place);
+      }
+    });
   }
 
   // ---- Populate calendar date input from unique race dates -----------------

@@ -4,7 +4,8 @@
 (function () {
   const { GlobalState, DataLoader, SidebarSelector, PerformanceGrid,
           RaceReplay, SpeedAnalytics, BumpChart,
-          SynergyMatrix, GearImpactAnalyzer } = window.DarkHorse;
+          SynergyMatrix, GearImpactAnalyzer,
+          JockeyHorseMatrix, OddsCalibration, Tutorial } = window.DarkHorse;
 
   // ---- Shared: make a floating popup draggable by its title bar -----------
   function makeDraggable(popup, bar) {
@@ -36,20 +37,18 @@
     });
   }
 
-  // ---- Bump Chart Popup ---------------------------------------------------
-  function initBumpPopup() {
-    const popup    = document.getElementById('bump-popup');
-    const bar      = document.getElementById('bump-popup-bar');
-    const closeBtn = document.getElementById('bump-popup-close');
-    const openBtn  = document.getElementById('btn-bump-chart');
-    if (!popup) return;
-
-    openBtn.addEventListener('click', () => {
-      const isHidden = popup.style.display === 'none' || popup.style.display === '';
-      popup.style.display = isHidden ? 'flex' : 'none';
-    });
+  // ---- Replay floating popup -----------------------------------------------
+  function initReplayPopup() {
+    const popup   = document.getElementById('replay-popup');
+    const openBtn = document.getElementById('btn-replay');
+    const closeBtn= document.getElementById('replay-close');
+    if (!popup || !openBtn) return;
+    openBtn.addEventListener('click', () => { popup.style.display = 'flex'; });
     closeBtn.addEventListener('click', () => { popup.style.display = 'none'; });
-    makeDraggable(popup, bar);
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && popup.style.display !== 'none') popup.style.display = 'none';
+    });
+    makeDraggable(popup, document.getElementById('replay-bar'));
   }
 
   // ---- Tab Switching -------------------------------------------------------
@@ -155,7 +154,8 @@
   function boot() {
     initTabs();
     initGlossary();
-    initBumpPopup();
+    initReplayPopup();
+    Tutorial.init();
 
     // Show loading state while data loads
     d3.select('#race-replay').html(
@@ -165,7 +165,7 @@
     DataLoader.load('dataset/20242025HongKongHorseRacingRawData.csv')
       .then(data => {
         console.log(
-          `[RaceAnalytics Pro] Loaded ${data.length} records, ` +
+          `[DarkHorse] Loaded ${data.length} records, ` +
           `${new Set(data.map(d => d.HorseID)).size} unique horses`
         );
 
@@ -177,6 +177,8 @@
         PerformanceGrid.init('#performance-grid');
         RaceReplay.init('#race-replay');
         BumpChart.init('#bump-chart');
+        JockeyHorseMatrix.init('#jockey-perf');
+        OddsCalibration.init('#odds-calibration');
 
         // Publish data to all listeners
         GlobalState.set('allData', data);
@@ -196,7 +198,7 @@
         }
       })
       .catch(err => {
-        console.error('[RaceAnalytics Pro] Failed to load data:', err);
+        console.error('[DarkHorse] Failed to load data:', err);
         d3.select('#race-replay').html(
           `<div class="empty-state">Error loading data. Serve from an HTTP server.<br>
            <code style="font-size:.75rem;color:var(--accent-red)">${err.message}</code></div>`
