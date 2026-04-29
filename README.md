@@ -28,25 +28,50 @@ Representative analytical questions the dashboard helps answer:
 - Which horses/jockeys overperform at specific venues/distances? *(Linked position vs. odds views filtered by track.)*
 - How do win odds evolve across a horse's career, and do patterns predict next-race outcomes? *(FSpeed + Win Odds trend charts.)*
 - What pace strategies win on yielding turf? *(Running-position replays + sectional time analysis.)*
-- Under what conditions is the betting favourite most likely to be upset? *(Track condition × trip condition heatmap.)*
+- Where is the betting market systematically wrong? *(Blind Spot Matrix: FSpeed vs. Odds quadrant bubble chart.)*
 - How do gear changes affect finishing speed? *(Gear Impact Analyzer: ΔFSpeed per gear configuration.)*
-- Which jockey–horse partnerships produce the best results? *(Synergy Matrix: Win%, Avg LBW, Place%.)*
-- How does a horse's sectional finishing speed (FSpeed) relate to its running position changes? *(Combined FSpeed + Running Position view.)*
+- Which jockey–horse partnerships produce the best results? *(Synergy Matrix: Win%, Avg position, total rides.)*
+- Which trainers peak at which point in the season? *(Trainer Seasonality: stream graph of monthly win peaks.)*
+- How well do market odds predict actual outcomes? *(Odds Calibration: implied probability vs. empirical win rate.)*
 
 ---
 
 ## Features
 
-| View | Description |
+The dashboard is organised into four tabs:
+
+### Horse Analysis
+| Component | Description |
 |---|---|
-| **Horse Sidebar** | Filter and select any horse; view profile badge with Rating, HorseID, Country, and `?` definitions for every metric |
-| **Performance Grid** | Side-by-side season summary cards per horse |
-| **Speed Analytics** | Three linked spark-line charts per horse: Running Position trend, FSpeed trend, LBW trend, and Win Odds trend |
-| **Race Replay** | Animated oval-track replay of any selected race; all runners shown as coloured dots |
-| **Bump Chart** | Floating popup ranking horses by finishing position across multiple races |
-| **Gear Impact Analyzer** | Bar chart of ΔFSpeed per gear code relative to the no-gear baseline |
-| **Synergy Matrix** | Jockey dropdown → Win%, Avg Finish, Avg LBW, and Place% for every horse–jockey pairing |
-| **Dictionary** | Floating, searchable glossary of every metric and HKJC code used in the dashboard |
+| **Horse Panel** | Search and select any horse (sort A–Z or by Rating ↑); view full profile: career record, breeding lineage (sire & dam), import type, and weight history. Horses with only one race display a notice instead of blank trend charts. |
+| **Speed Analytics** | Finish Position sparkline and FSpeed trend line for the selected horse's last 10 races, with interactive hover tooltips. |
+| **Synergy Matrix** | Jockeys who have ridden the selected horse — Win%, Avg position, and total rides, with sortable columns. |
+| **Gear Impact Analyzer** | Per-gear ΔFSpeed table (all columns sortable) showing how each equipment configuration affects finishing speed. |
+
+### Race Analysis
+| Component | Description |
+|---|---|
+| **Race Runner Table** | Select a race by date (calendar picker with prev/next navigation) or by horse (autocomplete search, sortable by name or Rating); displays all starters with position, jockey, draw, rating, LBW, odds, FSpeed, and gear. |
+| **Bump Chart** | Multi-race finishing-position bump chart for all horses in the selected race's field. |
+| **Race Replay** | Floating, resizable animated oval-track replay of the selected race; all runners shown as coloured dots with position labels. |
+
+### Trainer Analysis
+| Component | Description |
+|---|---|
+| **Jockey & Trainer Analysis** | Search and select a jockey by name (autocomplete); view career overview stats and a sortable Trainer Partnerships table (Win%, total rides, Avg position). |
+| **Trainer Seasonality** | Stream graph of monthly win totals for the top trainers across the full 2024–2025 season, revealing peak periods. |
+
+### Betting Edge
+| Component | Description |
+|---|---|
+| **Odds Calibration** | Compares implied win probability from market odds against actual win rates per odds bucket; highlights where the market over- or under-prices horses. |
+| **Blind Spot Matrix** | Quadrant bubble chart plotting FSpeed vs. Win Odds to surface horses the market systematically undervalues or overvalues. |
+
+---
+
+## Guided Tour
+
+Click the **Tour** button (top-right of the nav bar) to launch a 10-step guided walkthrough of every panel. Use the arrow keys or on-screen buttons to navigate; press Escape to exit at any time.
 
 ---
 
@@ -80,21 +105,26 @@ Then open **http://localhost:8080** in your browser.
 
 ```
 DarkHorse/
-├── index.html               # Shell: tabs, nav bar, popup containers
+├── index.html                   # Shell: tabs, nav bar, popup containers
 ├── css/
-│   └── styles.css           # All layout and component styles
+│   └── styles.css               # All layout and component styles
 ├── js/
-│   ├── app.js               # Boot sequence, tab switching, popup management
-│   ├── GlobalState.js       # Pub/sub state store (activeHorseID, activeRace, …)
-│   ├── DataLoader.js        # CSV parsing and data normalisation
-│   ├── Tooltips.js          # Metric-definition tooltip system + DEFINITIONS dict
-│   ├── SidebarSelector.js   # Horse list, filtering, profile card
-│   ├── PerformanceGrid.js   # Season summary cards
-│   ├── SpeedAnalytics.js    # FSpeed / LBW / Win Odds / Running Position charts
-│   ├── RaceReplay.js        # Animated oval-track race replay
-│   ├── BumpChart.js         # Floating bump-chart popup
-│   ├── GearImpactAnalyzer.js# ΔFSpeed by gear configuration
-│   └── SynergyMatrix.js     # Horse–jockey partnership matrix
+│   ├── app.js                   # Boot sequence, tab switching, popup management
+│   ├── GlobalState.js           # Pub/sub state store (activeHorseID, activeRace, …)
+│   ├── DataLoader.js            # CSV parsing and data normalisation
+│   ├── Tooltips.js              # Metric-definition tooltip system + DEFINITIONS dict
+│   ├── Tutorial.js              # 10-step guided tour (Tour button in nav bar)
+│   ├── SidebarSelector.js       # Horse list (search + A–Z / Rtg sort), profile card
+│   ├── SpeedAnalytics.js        # Finish Position sparkline + FSpeed trend charts
+│   ├── SynergyMatrix.js         # Jockeys-on-this-horse table (sortable columns)
+│   ├── GearImpactAnalyzer.js    # ΔFSpeed by gear configuration (sortable table)
+│   ├── PerformanceGrid.js       # Race runner table: select by date or by horse
+│   ├── BumpChart.js             # Multi-race finishing-position bump chart
+│   ├── RaceReplay.js            # Animated oval-track race replay (floating popup)
+│   ├── JockeyHorseMatrix.js     # Jockey → Trainer partnership analysis
+│   ├── TrainerSeasonality.js    # Stream graph of monthly trainer win peaks
+│   ├── OddsCalibration.js       # Odds vs. actual win rate calibration curve
+│   └── BlindSpotMatrix.js       # Quadrant bubble chart for market blind spots
 └── dataset/
     └── 20242025HongKongHorseRacingRawData.csv
 ```
@@ -124,5 +154,5 @@ Full definitions are available in the in-app **Dictionary** (nav bar → "Dictio
 ## Tech Stack
 
 - **D3.js v7** — all SVG rendering, axes, and data joins
-- **Vanilla JavaScript (ES Modules)** — no framework, no bundler
+- **Vanilla JavaScript** — no framework, no bundler
 - **CSS custom properties** — dark theme, responsive layout
