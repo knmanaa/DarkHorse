@@ -23,7 +23,7 @@ window.DarkHorse.BlindSpotMatrix = (function () {
   function _render() {
     container.html('');
     container.append('div').attr('class', 'panel-header')
-      .html('<span>Public Blind Spot Matrix <span class="chart-info-icon" id="bs-info-icon">i</span></span>'
+      .html('<span>Public Blind Spot Matrix</span>'
           + '<span style="font-size:.74rem;color:var(--text-muted)">Implied probability vs actual win rate by horse</span>');
 
     const body = container.append('div').attr('class', 'panel-body').style('padding', '10px 12px');
@@ -66,15 +66,6 @@ window.DarkHorse.BlindSpotMatrix = (function () {
     tooltip = d3.select('body').selectAll('.d3-tooltip.bs-tt').data([0])
       .join('div').attr('class', 'd3-tooltip bs-tt').style('display', 'none');
 
-    body.select('#bs-info-icon')
-      .on('mouseenter', event => {
-        tooltip.style('display', null)
-          .html('<div class="tt-title">How to read this</div><div class="tt-row">Upper-left (Hidden Gems): higher actual win rate than market-implied probability.</div><div class="tt-row">Lower-right (Trap zone): high public expectation but weaker realized results. Use filters to reduce noise.</div>')
-          .style('left', (event.pageX + 12) + 'px')
-          .style('top', (event.pageY - 26) + 'px');
-      })
-      .on('mousemove', event => tooltip.style('left', (event.pageX + 12) + 'px').style('top', (event.pageY - 26) + 'px'))
-      .on('mouseleave', () => tooltip.style('display', 'none'));
   }
 
   function _update() {
@@ -224,7 +215,17 @@ window.DarkHorse.BlindSpotMatrix = (function () {
         d3.select(this).attr('fill-opacity', 0.76).attr('stroke', '#0d1117');
         tooltip.style('display', 'none');
       })
-      .on('click', (_, d) => State().set('activeHorseID', d.horseID));
+      .on('click', (_, d) => {
+        State().set('activeHorseID', d.horseID);
+
+        // Jump to Horse Analysis tab so the selected horse context is visible.
+        document.querySelectorAll('.tab-page').forEach(p => {
+          p.style.display = p.id === 'page-dashboard' ? '' : 'none';
+        });
+        document.querySelectorAll('.nav-tab[data-tab]').forEach(t => {
+          t.classList.toggle('active', t.dataset.tab === 'page-dashboard');
+        });
+      });
 
     svg.append('text')
       .attr('x', (M.left + W - M.right) / 2).attr('y', H - 6)

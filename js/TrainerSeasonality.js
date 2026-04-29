@@ -58,28 +58,49 @@ window.DarkHorse.TrainerSeasonality = (function () {
     const monthTrainerWins = d3.rollup(
       winners.filter(d => topSet.has(d.Trainer)),
       rows => rows.length,
-      d => d._parsedDate ? d._parsedDate.getMonth() : 0,
+      d => {
+        const dt = d._parsedDate;
+        if (!dt) return 'unknown';
+        return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`;
+      },
       d => d.Trainer
     );
 
-    const monthlyRows = d3.range(12).map(month => {
-      const row = { month };
+    const monthKeys = Array.from(monthTrainerWins.keys())
+      .filter(k => k !== 'unknown')
+      .sort();
+    if (!monthKeys.length) return;
+
+    const monthMeta = monthKeys.map(key => {
+      const [yearStr, monthStr] = key.split('-');
+      const month = (+monthStr) - 1;
+      const year = +yearStr;
+      return {
+        key,
+        month,
+        year,
+        label: `${MONTHS[month]} ${year}`
+      };
+    });
+
+    const monthlyRows = monthMeta.map(meta => {
+      const row = { key: meta.key, month: meta.month, year: meta.year };
       topTrainers.forEach(trainer => {
-        row[trainer] = monthTrainerWins.get(month)?.get(trainer) || 0;
+        row[trainer] = monthTrainerWins.get(meta.key)?.get(trainer) || 0;
       });
       return row;
     });
 
-    _draw(monthlyRows, topTrainers);
+    _draw(monthlyRows, topTrainers, monthMeta);
   }
 
-  function _draw(monthlyRows, trainers) {
+  function _draw(monthlyRows, trainers, monthMeta) {
     svg.selectAll('*').remove();
 
     const x = d3.scalePoint()
-      .domain(d3.range(12))
+      .domain(d3.range(monthMeta.length))
       .range([M.left, W - M.right])
-      .padding(0.4);
+      .padding(0.3);
 
     const stack = d3.stack()
       .keys(trainers)
@@ -132,12 +153,12 @@ window.DarkHorse.TrainerSeasonality = (function () {
       })
       .on('mousemove', function (event, d) {
         const [mx] = d3.pointer(event, svg.node());
-        const nearestMonth = d3.least(d3.range(12), m => Math.abs((x(m) || 0) - mx));
+        const nearestMonth = d3.least(d3.range(monthMeta.length), m => Math.abs((x(m) || 0) - mx));
         const value = monthlyRows[nearestMonth][d.key] || 0;
         tooltip.style('display', null)
           .html(
             `<div class="tt-title">${d.key}</div>
-             <div class="tt-row"><span class="tt-label">Month:</span><span>${MONTHS[nearestMonth]}</span></div>
+             <div class="tt-row"><span class="tt-label">Month:</span><span>${monthMeta[nearestMonth].label}</span></div>
              <div class="tt-row"><span class="tt-label">Wins:</span><span>${value}</span></div>`
           )
           .style('left', (event.pageX + 14) + 'px')
@@ -150,7 +171,7 @@ window.DarkHorse.TrainerSeasonality = (function () {
 
     svg.append('text')
       .attr('x', W / 2)
-      .attr('y', 24)
+      .attr('y', 19)
       .attr('text-anchor', 'middle')
       .attr('fill', 'var(--accent-blue)')
       .style('font-size', '13px')
@@ -159,7 +180,7 @@ window.DarkHorse.TrainerSeasonality = (function () {
 
     svg.append('text')
       .attr('x', W / 2)
-      .attr('y', 38)
+      .attr('y', 33)
       .attr('text-anchor', 'middle')
       .attr('fill', 'var(--text-secondary)')
       .style('font-size', '10px')
@@ -168,63 +189,80 @@ window.DarkHorse.TrainerSeasonality = (function () {
     // axes
     svg.append('g')
       .attr('transform', `translate(0,${H - M.bottom})`)
-      .call(d3.axisBottom(x).tickFormat(d => MONTHS[d]))
+      .call(d3.axisBottom(x).tickFormat(d => {
+        const m = monthMeta[d];
+        if (!m) return '';
+        return m.label;
+      }))
       .call(g => g.select('.domain').remove())
       .call(g => g.selectAll('.tick line').remove())
-      .call(g => g.selectAll('text').attr('fill', 'var(--text-secondary)').style('font-size', '10px'));
+      .call(g => g.selectAll('text')
+        .attr('fill', 'var(--text-secondary)')
+        .style('font-size', '9px')
+        .attr('transform', 'rotate(-32)')
+        .style('text-anchor', 'end')
+        .attr('dx', '-4')
+        .attr('dy', '4'));
 
     svg.append('text')
       .attr('x', (M.left + W - M.right) / 2)
-      .attr('y', H - 56)
+      .attr('y', H - 46)
       .attr('text-anchor', 'middle')
       .attr('fill', 'var(--text-secondary)')
       .style('font-size', '11px')
-      .text('Months of Season');
+      .text('Month and Year');
 
-    const augCenter = x(7) || 0;
-    const julCenter = x(6) || augCenter - 24;
-    const sepCenter = x(8) || augCenter + 24;
-    const augStart = (julCenter + augCenter) / 2;
-    const augEnd = (augCenter + sepCenter) / 2;
+    const augustIndices = monthMeta
+      .map((m, i) => ({ m, i }))
+      .filter(({ m }) => m.month === 7)
+      .map(({ i }) => i);
 
-    svg.append('rect')
-      .attr('x', augStart)
-      .attr('y', M.top)
-      .attr('width', Math.max(augEnd - augStart, 14))
-      .attr('height', H - M.top - M.bottom)
-      .attr('fill', 'var(--accent-orange)')
-      .attr('opacity', 0.12)
-      .attr('rx', 4)
-      .style('cursor', 'help')
-      .on('mouseenter', function (event) {
-        d3.select(this).attr('opacity', 0.2);
-        tooltip.style('display', null)
-          .html(
-            `<div class="tt-title">August off-season</div>
-             <div class="tt-row">No races were held in August.</div>`
-          )
-          .style('left', (event.pageX + 14) + 'px')
-          .style('top', (event.pageY - 28) + 'px');
-      })
-      .on('mousemove', function (event) {
-        tooltip.style('display', null)
-          .style('left', (event.pageX + 14) + 'px')
-          .style('top', (event.pageY - 28) + 'px');
-      })
-      .on('mouseleave', function () {
-        d3.select(this).attr('opacity', 0.12);
-        tooltip.style('display', 'none');
-      });
+    augustIndices.forEach(idx => {
+      const center = x(idx) || 0;
+      const prev = x(Math.max(0, idx - 1)) || (center - 20);
+      const next = x(Math.min(monthMeta.length - 1, idx + 1)) || (center + 20);
+      const start = idx === 0 ? center - (next - center) / 2 : (prev + center) / 2;
+      const end = idx === monthMeta.length - 1 ? center + (center - prev) / 2 : (center + next) / 2;
 
-    svg.append('line')
-      .attr('x1', augCenter)
-      .attr('x2', augCenter)
-      .attr('y1', M.top)
-      .attr('y2', H - M.bottom)
-      .attr('stroke', 'var(--accent-orange)')
-      .attr('stroke-opacity', 0.55)
-      .attr('stroke-width', 1)
-      .attr('stroke-dasharray', '3,3');
+      svg.append('rect')
+        .attr('x', start)
+        .attr('y', M.top)
+        .attr('width', Math.max(end - start, 14))
+        .attr('height', H - M.top - M.bottom)
+        .attr('fill', 'var(--accent-orange)')
+        .attr('opacity', 0.12)
+        .attr('rx', 4)
+        .style('cursor', 'help')
+        .on('mouseenter', function (event) {
+          d3.select(this).attr('opacity', 0.2);
+          tooltip.style('display', null)
+            .html(
+              `<div class="tt-title">August off-season</div>
+               <div class="tt-row">No races were held in August.</div>`
+            )
+            .style('left', (event.pageX + 14) + 'px')
+            .style('top', (event.pageY - 28) + 'px');
+        })
+        .on('mousemove', function (event) {
+          tooltip.style('display', null)
+            .style('left', (event.pageX + 14) + 'px')
+            .style('top', (event.pageY - 28) + 'px');
+        })
+        .on('mouseleave', function () {
+          d3.select(this).attr('opacity', 0.12);
+          tooltip.style('display', 'none');
+        });
+
+      svg.append('line')
+        .attr('x1', center)
+        .attr('x2', center)
+        .attr('y1', M.top)
+        .attr('y2', H - M.bottom)
+        .attr('stroke', 'var(--accent-orange)')
+        .attr('stroke-opacity', 0.55)
+        .attr('stroke-width', 1)
+        .attr('stroke-dasharray', '3,3');
+    });
 
     // compact legend
     const legend = svg.append('g').attr('transform', `translate(${M.left}, ${H - 28})`);

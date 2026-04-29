@@ -152,6 +152,13 @@ window.DarkHorse.Tutorial = (function () {
     welcomePrompt.className = 'tut-welcome-prompt';
     welcomePrompt.textContent = 'Are you new to this dashboard? Start the tutorial if you are new, or skip if you already know how to use it.';
 
+    const welcomeDisclaimer = document.createElement('p');
+    welcomeDisclaimer.className = 'tut-welcome-prompt';
+    welcomeDisclaimer.style.marginTop = '8px';
+    welcomeDisclaimer.style.color = 'var(--text-muted)';
+    welcomeDisclaimer.style.fontSize = '.78rem';
+    welcomeDisclaimer.textContent = 'Disclaimer: This dataset is not complete and may contain missing records due to data provider issues.';
+
     const welcomeActions = document.createElement('div');
     welcomeActions.className = 'tut-welcome-actions';
 
@@ -170,6 +177,7 @@ window.DarkHorse.Tutorial = (function () {
     _welcome.appendChild(welcomeTitle);
     _welcome.appendChild(welcomeDesc);
     _welcome.appendChild(welcomePrompt);
+    _welcome.appendChild(welcomeDisclaimer);
     _welcome.appendChild(welcomeActions);
 
     // Progress bar

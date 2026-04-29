@@ -31,7 +31,7 @@ window.DarkHorse.OddsCalibration = (function () {
   function _render() {
     container.html('');
     const header = container.append('div').attr('class', 'panel-header');
-    header.html('<span>Market Bias by Odds Bucket <span class="chart-info-icon" id="oc-info-icon">i</span></span>');
+    header.html('<span>Market Bias by Odds Bucket</span>');
 
     const body = container.append('div').attr('class', 'panel-body').style('padding', '10px 12px');
     const controls = body.append('div').attr('class', 'chart-switch');
@@ -62,17 +62,6 @@ window.DarkHorse.OddsCalibration = (function () {
     tooltip = d3.select('body').selectAll('.d3-tooltip.oc-tt').data([0])
       .join('div').attr('class', 'd3-tooltip oc-tt').style('display', 'none');
 
-    body.select('#oc-info-icon')
-      .on('mouseenter', event => {
-        tooltip.style('display', null)
-          .html('<div class="tt-title">How to read this</div><div class="tt-row">Bias bars: right/green = value zone, left/red = trap zone based on Edge % (Actual − Implied).</div><div class="tt-row">Use "View as scatter" for detailed calibration diagnostics and confidence context.</div>')
-          .style('left', (event.pageX + 12) + 'px')
-          .style('top', (event.pageY - 26) + 'px');
-      })
-      .on('mousemove', event => {
-        tooltip.style('left', (event.pageX + 12) + 'px').style('top', (event.pageY - 26) + 'px');
-      })
-      .on('mouseleave', () => tooltip.style('display', 'none'));
   }
 
   // ---- Data update ---------------------------------------------------------

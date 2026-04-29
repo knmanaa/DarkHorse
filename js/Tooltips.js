@@ -52,6 +52,16 @@ window.DarkHorse.Tooltips = (function () {
     'Min races'       : 'Minimum sample-size filter. Increasing this removes noisy low-sample horses and keeps comparisons more statistically meaningful.',
     'Distance Filter' : 'Scope results by race distance profile: Sprint (<=1200m), Mile (1201-1800m), or Staying (>1800m).',
     'Class Filter'    : 'Limits analysis to races from selected class bands so you can compare horses under similar competition level.',
+    'Kelly Criterion' : 'A bankroll-sizing formula that converts betting edge into a suggested stake fraction. Positive value indicates a theoretical bet; negative means no edge.',
+    'Calibration Curve': 'Compares market-implied win probability (x-axis) against actual win rate (y-axis). Points above the diagonal imply undervaluation; below imply over-backing.',
+    'Market Bias'     : 'Direction and size of mismatch between market expectation and actual outcomes, typically measured as Actual Win Rate minus Implied Probability.',
+    'Odds Bucket'     : 'Grouped odds ranges (for example 1-2x, 2-5x, 5-10x) used to summarize market behavior at different price bands.',
+    'Value Zone'      : 'Region where actual win rate exceeds market-implied probability. In Betting Edge this is shown in green / right side of zero.',
+    'Trap Zone'       : 'Region where market-implied probability is higher than actual win rate. In Betting Edge this is shown in red / left side of zero.',
+    'Hidden Gems'     : 'Blind Spot Matrix upper-left quadrant: horses with stronger realized win rate than market expectation.',
+    'Trap Favourites' : 'Blind Spot Matrix upper-right risk area: heavily backed profiles that may not deliver enough real win rate.',
+    'Ignored Duds'    : 'Blind Spot Matrix lower-left quadrant: low market support and low realized win performance.',
+    'Fairly Priced'   : 'Blind Spot Matrix lower-right neutral zone where market expectation and realized performance are more aligned.',
 
     // ── Draw ─────────────────────────────────────────────────────────────────
     'Dr.'             : 'Draw — starting gate/barrier number. 1 = inside rail (shortest path). Inner draws (1–3) are shortest but risk being boxed in. Middle draws (4–8) are most balanced. Outer draws (9+) require wider running lines, favouring horses with good early pace or a late-running style.',
