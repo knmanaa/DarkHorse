@@ -67,6 +67,13 @@ window.DarkHorse.Tutorial = (function () {
       placement : 'right',
     },
     {
+      tab       : 'page-market',
+      target    : '#trainer-seasonality',
+      title     : 'Trainer Seasonality Stream',
+      body      : 'Shows the top 10 trainers\' monthly win flow across 2024 and 2025. Wider stream bands indicate higher wins; hover the highlighted August zone to see the off-season note.',
+      placement : 'left',
+    },
+    {
       tab       : 'page-betting',
       target    : '#odds-calibration',
       title     : 'Market Bias by Odds Bucket',
